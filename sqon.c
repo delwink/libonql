@@ -1,5 +1,5 @@
 /*
- *  Object Notation Query Language (ONQL) - C API
+ *  Structured Query Object Notation - C API
  *  Copyright (C) 2015 Delwink, LLC
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -17,12 +17,12 @@
 
 #include <jansson.h>
 
-#include "onql.h"
+#include "sqon.h"
 #include "safemem.h"
 
 size_t QLEN = 0;
 
-void onql_init(size_t qlen)
+void sqon_init(size_t qlen)
 {
     QLEN = qlen;
     json_set_alloc_funcs(safe_malloc, safe_free);

@@ -1,6 +1,6 @@
-libonql
+libsqon
 =======
 
-ONQL - Object Notation Query Language
+SQON - Structured Query Object Notation
 
 Query SQL databases with a JSON API. Current target: MySQL.

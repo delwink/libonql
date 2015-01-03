@@ -1,7 +1,7 @@
 AC_PREREQ([2.60])
-AC_INIT([libonql],[0.0.0],[support@delwink.com])
+AC_INIT([libsqon],[0.0.0],[support@delwink.com])
 
-AC_CONFIG_SRCDIR([onql.c])
+AC_CONFIG_SRCDIR([sqon.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
