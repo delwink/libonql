@@ -64,15 +64,15 @@ void sqon_init(size_t qlen);
 /**
  * @brief The universal database connection auxiliary structure for libsqon.
  */
-struct dbconn {
-    void *con;
+typedef struct dbconn {
+    void *com;
     bool isopen;
     uint8_t type;
     const char *host;
     const char *user;
     const char *passwd;
     const char *database;
-};
+} sqon_dbsrv;
 
 /**
  * @brief Connection type constant for MySQL-based databases.
@@ -88,21 +88,41 @@ struct dbconn {
  * @param database The name of the database to be used; can be NULL.
  * @return A new database connection object.
  */
-struct dbconn sqon_new_connection(uint8_t type, const char *host,
-        const char *user, const char *passwd, const char *database);
+sqon_dbsrv sqon_new_connection(uint8_t type, const char *host, const char *user,
+        const char *passwd, const char *database);
 
 /**
  * @brief Connects to the database server.
  * @param con Initialized database connection object.
  * @return Negative if input error; positive if connection error.
  */
-int sqon_connect(struct dbconn *con);
+int sqon_connect(sqon_dbsrv *srv);
 
 /**
  * @brief Closes connection to the database server.
  * @param con Connected database connection object.
  */
-void sqon_close(struct dbconn *con);
+void sqon_close(sqon_dbsrv *srv);
+
+/**
+ * @brief Query the database (SQL).
+ * @param con Initialized database connection object.
+ * @param query UTF-8 encoded SQL statement.
+ * @param out Buffer into which to store the output (if any) as JSON.
+ * @param n Buffer length of out.
+ * @return Negative if input or IO error; positive if error from server.
+ */
+int sqon_query_sql(sqon_dbsrv *srv, const char *query, char *out, size_t n);
+
+/**
+ * @brief Query the database (SQON).
+ * @param con Initialized database connection object.
+ * @param query UTF-8 encoded SQON object with query instructions.
+ * @param out Buffer into which to store the output (if any) as JSON.
+ * @param n Bufer length of out.
+ * @return Negative if input or IO error; positive if error from server.
+ */
+int sqon_query(sqon_dbsrv *srv, const char *query, char *out, size_t n);
 
 #ifdef __cplusplus
 }
