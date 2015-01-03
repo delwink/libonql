@@ -1,0 +1,6 @@
+libonql
+=======
+
+ONQL - Object Notation Query Language
+
+Query SQL databases with a JSON API. Current target: MySQL.
