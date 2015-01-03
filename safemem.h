@@ -1,5 +1,5 @@
 /*
- *  Object Notation Query Language (ONQL) - C API
+ *  safemem - safer functions for managing sensitive data in memory
  *  Copyright (C) 2015 Delwink, LLC
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -15,15 +15,22 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <jansson.h>
+#ifndef DELWINK_SAFEMEM_H
+#define DELWINK_SAFEMEM_H
 
-#include "onql.h"
-#include "safemem.h"
+#include <stdlib.h>
 
-size_t QLEN = 0;
-
-void onql_init(size_t qlen)
+#ifdef __cplusplus
+extern "C"
 {
-    QLEN = qlen;
-    json_set_alloc_funcs(safe_malloc, safe_free);
+#endif
+
+void *safe_malloc(size_t n);
+
+void safe_free(void *v);
+
+#ifdef __cplusplus
 }
+#endif
+
+#endif
