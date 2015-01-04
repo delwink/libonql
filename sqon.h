@@ -50,6 +50,20 @@
 "You should have received a copy of the GNU Affero General Public License\n"\
 "along with this program.  If not, see <http://www.gnu.org/licenses/>."
 
+#define SQON_LOADERROR   -10
+
+#define SQON_TYPEERROR   -11
+
+#define SQON_MEMORYERROR -12
+
+#define SQON_OVERFLOW    -13
+
+#define SQON_UNSUPPORTED -14
+
+#define SQON_INCOMPLETE  -15
+
+#define SQON_CONNECTERR  -20
+
 #ifdef __cplusplus
 extern "C"
 {
