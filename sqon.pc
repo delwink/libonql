@@ -9,5 +9,5 @@ includedir = ${prefix}/include
 Version: 0.0
 Cflags = -I${includedir}
 Description: Delwink JSON API for SQL databases
-Name: onql
-Libs: -lonql
+Name: sqon
+Libs: -lsqon
