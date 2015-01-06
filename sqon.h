@@ -28,6 +28,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 /**
  * @brief libsqon software version
