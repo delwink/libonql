@@ -28,7 +28,80 @@
 
 int res_to_json(uint8_t type, void *res, char *out, size_t n)
 {
-    return 0;
+    int rc = 0;
+    json_t *root, *jsonrow;
+    size_t num_fields, i;
+    char *temp;
+    union {
+        MYSQL_FIELD *mysql;
+    } fields;
+    union {
+        MYSQL_ROW mysql;
+    } row;
+
+    root = json_array();
+    if (NULL == root)
+        return SQON_MEMORYERROR;
+
+    switch (type) {
+    case SQON_DBCONN_MYSQL:
+        num_fields = mysql_num_fields(res);
+        if (!num_fields) {
+            rc = SQON_NOCOLUMNS;
+            break;
+        }
+
+        fields.mysql = mysql_fetch_fields(res);
+
+        while ((row.mysql = mysql_fetch_row(res))) {
+            jsonrow = json_object();
+            if (NULL == jsonrow) {
+                rc = SQON_MEMORYERROR;
+                break;
+            }
+
+            for (i = 0; i < num_fields; ++i) {
+                rc = json_object_set_new(jsonrow, fields.mysql[i].name,
+                        json_string(row.mysql[i]));
+                if (rc) {
+                    rc = SQON_MEMORYERROR;
+                    break;
+                }
+            }
+
+            if (rc) {
+                json_decref(jsonrow);
+                break;
+            }
+
+            json_array_append(root, jsonrow);
+            json_decref(jsonrow);
+        }
+        break;
+
+    default:
+        rc = SQON_UNSUPPORTED;
+        break;
+    }
+
+    if (rc) {
+        json_decref(root);
+        return rc;
+    }
+
+    temp = json_dumps(root, 0);
+    if (NULL == temp) {
+        json_decref(root);
+        return SQON_MEMORYERROR;
+    }
+    rc = snprintf(out, n, "%s", temp);
+    if ((size_t) rc >= n)
+        rc = SQON_OVERFLOW;
+    else
+        rc = 0;
+    free(temp);
+
+    return rc;
 }
 
 static int escape(sqon_dbsrv *srv, const char *in, char *out, size_t n,

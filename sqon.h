@@ -64,6 +64,10 @@
 
 #define SQON_CONNECTERR  -20
 
+#define SQON_NOCOLUMNS   -21
+
+#define SQON_NULLCOLUMN  -22
+
 #ifdef __cplusplus
 extern "C"
 {
