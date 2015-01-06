@@ -22,6 +22,7 @@
 #include <mysql.h>
 
 #include "internal.h"
+#include "safemem.h"
 
 #define PERM_GRANT 1
 #define PERM_REVOKE 2
@@ -99,7 +100,7 @@ int res_to_json(uint8_t type, void *res, char *out, size_t n)
         rc = SQON_OVERFLOW;
     else
         rc = 0;
-    free(temp);
+    safe_free(temp);
 
     return rc;
 }
