@@ -22,25 +22,24 @@
 #include <mysql.h>
 
 #include "internal.h"
-#include "safemem.h"
 
 #define PERM_GRANT 1
 #define PERM_REVOKE 2
 
-int res_to_json(uint8_t type, void *res, char *out, size_t n)
+int res_to_json(uint8_t type, void *res, char **out, const char *pk)
 {
     int rc = 0;
+    bool arr = (NULL == pk || !strcmp(pk, ""));
     json_t *root, *jsonrow;
     size_t num_fields, i;
-    char *temp;
-    union {
-        MYSQL_FIELD *mysql;
-    } fields;
-    union {
-        MYSQL_ROW mysql;
-    } row;
+    char *vpk = NULL;
+    union fields fields;
+    union row row;
 
-    root = json_array();
+    if (arr)
+        root = json_array();
+    else
+        root = json_object();
     if (NULL == root)
         return SQON_MEMORYERROR;
 
@@ -53,6 +52,18 @@ int res_to_json(uint8_t type, void *res, char *out, size_t n)
         }
 
         fields.mysql = mysql_fetch_fields(res);
+        if (!arr) {
+            for (i = 0; i < num_fields; ++i) {
+                if (strcmp(fields.mysql[i].name, pk)) {
+                    rc = SQON_NOPK;
+                } else {
+                    rc = 0;
+                    break;
+                }
+            }
+            if (rc)
+                break;
+        }
 
         while ((row.mysql = mysql_fetch_row(res))) {
             jsonrow = json_object();
@@ -62,8 +73,14 @@ int res_to_json(uint8_t type, void *res, char *out, size_t n)
             }
 
             for (i = 0; i < num_fields; ++i) {
-                rc = json_object_set_new(jsonrow, fields.mysql[i].name,
-                        json_string(row.mysql[i]));
+                if (arr)
+                    rc = json_object_set_new(jsonrow, fields.mysql[i].name,
+                            json_string(row.mysql[i]));
+                else if (strcmp(fields.mysql[i].name, pk))
+                    rc = json_object_set_new(jsonrow, fields.mysql[i].name,
+                            json_string(row.mysql[i]));
+                else
+                    vpk = row.mysql[i];
                 if (rc) {
                     rc = SQON_MEMORYERROR;
                     break;
@@ -75,7 +92,10 @@ int res_to_json(uint8_t type, void *res, char *out, size_t n)
                 break;
             }
 
-            json_array_append(root, jsonrow);
+            if (arr)
+                json_array_append(root, jsonrow);
+            else
+                json_object_set(root, vpk, jsonrow);
             json_decref(jsonrow);
         }
         break;
@@ -90,17 +110,11 @@ int res_to_json(uint8_t type, void *res, char *out, size_t n)
         return rc;
     }
 
-    temp = json_dumps(root, 0);
-    if (NULL == temp) {
-        json_decref(root);
-        return SQON_MEMORYERROR;
+    *out = json_dumps(root, JSON_PRESERVE_ORDER);
+    json_decref(root);
+    if (NULL == *out) {
+        rc = SQON_MEMORYERROR;
     }
-    rc = snprintf(out, n, "%s", temp);
-    if ((size_t) rc >= n)
-        rc = SQON_OVERFLOW;
-    else
-        rc = 0;
-    safe_free(temp);
 
     return rc;
 }

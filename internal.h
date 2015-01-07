@@ -20,7 +20,19 @@
 
 #include "sqon.h"
 
-int res_to_json(uint8_t type, void *res, char *out, size_t n);
+union res {
+    MYSQL_RES *mysql;
+};
+
+union fields {
+    MYSQL_FIELD *mysql;
+};
+
+union row {
+    MYSQL_ROW mysql;
+};
+
+int res_to_json(uint8_t type, void *res, char **out, const char *pk);
 
 int sqon_to_sql(sqon_dbsrv *srv, const char *in, char *out, size_t n);
 

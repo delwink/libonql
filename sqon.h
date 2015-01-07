@@ -18,7 +18,7 @@
 /**
  * @file sqon.h
  * @version 0.0
- * @date 01/03/2014
+ * @date 01/07/2014
  * @author David McMackins II
  * @brief C implementation for Delwink's SQON
  */
@@ -51,28 +51,73 @@
 "You should have received a copy of the GNU Affero General Public License\n"\
 "along with this program.  If not, see <http://www.gnu.org/licenses/>."
 
+/**
+ * @brief Error loading SQON string.
+ */
 #define SQON_LOADERROR   -10
 
+/**
+ * @brief Unexpected JSON type while parsing.
+ */
 #define SQON_TYPEERROR   -11
 
+/**
+ * @brief Error allocating memory.
+ */
 #define SQON_MEMORYERROR -12
 
+/**
+ * @brief Buffer overflow.
+ */
 #define SQON_OVERFLOW    -13
 
+/**
+ * @brief Unsupported SQON object.
+ */
 #define SQON_UNSUPPORTED -14
 
+/**
+ * @brief Input shorter than expected.
+ */
 #define SQON_INCOMPLETE  -15
 
+/**
+ * @brief Error connecting to database server.
+ */
 #define SQON_CONNECTERR  -20
 
+/**
+ * @brief Expecting return columns, but found none.
+ */
 #define SQON_NOCOLUMNS   -21
 
+/**
+ * @brief Database server returned NULL column.
+ */
 #define SQON_NULLCOLUMN  -22
+
+/**
+ * @brief Specified primary key was not returned.
+ */
+#define SQON_NOPK        -23
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
+
+/**
+ * @brief More secure implementation of stdlib's malloc().
+ * @param n Number of bytes to allocate on the heap.
+ * @return Pointer to n bytes of available memory.
+ */
+void *sqon_malloc(size_t n);
+
+/**
+ * @brief Frees memory allocated with sqon_malloc().
+ * @param v Pointer returned by earlier call to sqon_malloc().
+ */
+void sqon_free(void *v);
 
 /**
  * @brief Initializes SQON and supporting libraries.
@@ -112,36 +157,49 @@ sqon_dbsrv sqon_new_connection(uint8_t type, const char *host, const char *user,
 
 /**
  * @brief Connects to the database server.
- * @param con Initialized database connection object.
+ * @param srv Initialized database connection object.
  * @return Negative if input error; positive if connection error.
  */
 int sqon_connect(sqon_dbsrv *srv);
 
 /**
  * @brief Closes connection to the database server.
- * @param con Connected database connection object.
+ * @param srv Connected database connection object.
  */
 void sqon_close(sqon_dbsrv *srv);
 
 /**
  * @brief Query the database (SQL).
- * @param con Initialized database connection object.
+ * @param srv Initialized database connection object.
  * @param query UTF-8 encoded SQL statement.
- * @param out Buffer into which to store the output (if any) as JSON.
- * @param n Buffer length of out.
+ * @param out Pointer to string which will be allocated and populated with
+ * JSON-formatted response from the database; must free with sqon_free();
+ * populated as object if table has a primary key, else an array.
+ * @param pk Primary key expected in return value, if any (else NULL).
  * @return Negative if input or IO error; positive if error from server.
  */
-int sqon_query_sql(sqon_dbsrv *srv, const char *query, char *out, size_t n);
+int sqon_query_sql(sqon_dbsrv *srv, const char *query, char **out,
+        const char *pk);
 
 /**
  * @brief Query the database (SQON).
- * @param con Initialized database connection object.
+ * @param srv Initialized database connection object.
  * @param query UTF-8 encoded SQON object with query instructions.
- * @param out Buffer into which to store the output (if any) as JSON.
- * @param n Bufer length of out.
+ * @param out See sqon_query_sql().
+ * @param pk See sqon_query_sql().
+ * @return See sqon_query_sql().
+ */
+int sqon_query(sqon_dbsrv *srv, const char *query, char **out, const char *pk);
+
+/**
+ * @brief Gets the primary key of a table.
+ * @param srv Initialized database connection object.
+ * @param table Name of the database table.
+ * @param out Pointer to string which will be allocated and populated with the
+ * table's primary key.
  * @return Negative if input or IO error; positive if error from server.
  */
-int sqon_query(sqon_dbsrv *srv, const char *query, char *out, size_t n);
+int sqon_get_pk(sqon_dbsrv *srv, const char *table, char **out);
 
 #ifdef __cplusplus
 }
