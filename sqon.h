@@ -101,6 +101,11 @@
  */
 #define SQON_NOPK        -23
 
+/**
+ * @brief Specified primary key was not unique among returned data.
+ */
+#define SQON_PKNOTUNIQUE -24
+
 #ifdef __cplusplus
 extern "C"
 {

@@ -92,11 +92,16 @@ int res_to_json(uint8_t type, void *res, char **out, const char *pk)
                 break;
             }
 
-            if (arr)
+            if (arr) {
                 json_array_append(root, jsonrow);
-            else
+            } else if (NULL == json_object_get(root, vpk)) {
                 json_object_set(root, vpk, jsonrow);
+            } else {
+                rc = SQON_PKNOTUNIQUE;
+            }
             json_decref(jsonrow);
+            if (rc)
+                break;
         }
         break;
 
