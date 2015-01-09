@@ -157,7 +157,7 @@ static int escape(sqon_dbsrv *srv, const char *in, char *out, size_t n,
                 else
                     rc = 0;
             } else {
-                strcpy(temp, out);
+                strcpy(out, temp);
             }
         else
             rc = SQON_OVERFLOW;
