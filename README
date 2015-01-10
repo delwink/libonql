@@ -1,6 +1,40 @@
 libsqon
 =======
 
-SQON - Structured Query Object Notation
+SQON - Structured Query Object Notation (Delwink C Implementation)
 
 Query SQL databases with a JSON API. Current target: MySQL.
+
+This is Delwink's C implementation of SQON. For the format itself, see
+[Delwink's website][3].
+
+Why SQON?
+---------
+
+The purpose of SQON is simple: to make interaction with SQL databases as easy
+as any JSON API. So many languages interact flawlessly with JSON for data
+transfer as well as (clearly) object notation.
+
+This was created as a replacement for [cquel][1] that would make for an easier
+library to wrap in the Python 3 language, which supports JSON objects in its
+standard library. This replacement offers a far simpler API, and this provides
+an environment less prone to bugs and memory leaks on the C side, making a
+portable and stable library implementation.
+
+Hacking
+-------
+
+libsqon uses the GNU coding style for C, and follows a strict 80-column limit
+in its source code. To submit a patch, [submit your diff to Delwink][2] or use
+GitHub's pull request system.
+
+License
+-------
+
+libsqon is free software, released under the terms of version 3 of the GNU
+Affero General Public License. You are free to copy, modify, and redistribute
+this software and use it for whatever purpose.
+
+[1]: http://delwink.com/software/cquel.html
+[2]: mailto:contribute@delwink.com
+[3]: http://delwink.com/software/sqon.html
