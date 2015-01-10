@@ -4,7 +4,7 @@
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
- *  the Free Software Foundation.
+ *  the Free Software Foundation, version 3 only.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -43,7 +43,7 @@
 "Copyright (C) 2015 Delwink, LLC\n\n"\
 "This program is free software: you can redistribute it and/or modify\n"\
 "it under the terms of the GNU Affero General Public License as published by\n"\
-"the Free Software Foundation.\n\n"\
+"the Free Software Foundation, version 3 only.\n\n"\
 "This program is distributed in the hope that it will be useful,\n"\
 "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"\
 "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"\
@@ -116,31 +116,32 @@ extern "C"
  * @param n Number of bytes to allocate on the heap.
  * @return Pointer to n bytes of available memory.
  */
-void *sqon_malloc(size_t n);
+void *sqon_malloc (size_t n);
 
 /**
  * @brief Frees memory allocated with sqon_malloc().
  * @param v Pointer returned by earlier call to sqon_malloc().
  */
-void sqon_free(void *v);
+void sqon_free (void *v);
 
 /**
  * @brief Initializes SQON and supporting libraries.
  * @param qlen Maximum length for queries to the database.
  */
-void sqon_init(size_t qlen);
+void sqon_init (size_t qlen);
 
 /**
  * @brief The universal database connection auxiliary structure for libsqon.
  */
-typedef struct dbconn {
-    void *com;
-    bool isopen;
-    uint8_t type;
-    const char *host;
-    const char *user;
-    const char *passwd;
-    const char *database;
+typedef struct dbconn
+{
+  void *com;
+  bool isopen;
+  uint8_t type;
+  const char *host;
+  const char *user;
+  const char *passwd;
+  const char *database;
 } sqon_dbsrv;
 
 /**
@@ -157,21 +158,22 @@ typedef struct dbconn {
  * @param database The name of the database to be used; can be NULL.
  * @return A new database connection object.
  */
-sqon_dbsrv sqon_new_connection(uint8_t type, const char *host, const char *user,
-        const char *passwd, const char *database);
+sqon_dbsrv sqon_new_connection (uint8_t type, const char *host,
+			        const char *user, const char *passwd,
+				const char *database);
 
 /**
  * @brief Connects to the database server.
  * @param srv Initialized database connection object.
  * @return Negative if input error; positive if connection error.
  */
-int sqon_connect(sqon_dbsrv *srv);
+int sqon_connect (sqon_dbsrv *srv);
 
 /**
  * @brief Closes connection to the database server.
  * @param srv Connected database connection object.
  */
-void sqon_close(sqon_dbsrv *srv);
+void sqon_close (sqon_dbsrv *srv);
 
 /**
  * @brief Query the database (SQL).
@@ -183,8 +185,8 @@ void sqon_close(sqon_dbsrv *srv);
  * @param pk Primary key expected in return value, if any (else NULL).
  * @return Negative if input or IO error; positive if error from server.
  */
-int sqon_query_sql(sqon_dbsrv *srv, const char *query, char **out,
-        const char *pk);
+int sqon_query_sql (sqon_dbsrv *srv, const char *query, char **out,
+		    const char *pk);
 
 /**
  * @brief Query the database (SQON).
@@ -194,7 +196,8 @@ int sqon_query_sql(sqon_dbsrv *srv, const char *query, char **out,
  * @param pk See sqon_query_sql().
  * @return See sqon_query_sql().
  */
-int sqon_query(sqon_dbsrv *srv, const char *query, char **out, const char *pk);
+int sqon_query (sqon_dbsrv *srv, const char *query, char **out,
+		const char *pk);
 
 /**
  * @brief Gets the primary key of a table.
@@ -204,7 +207,7 @@ int sqon_query(sqon_dbsrv *srv, const char *query, char **out, const char *pk);
  * table's primary key.
  * @return Negative if input or IO error; positive if error from server.
  */
-int sqon_get_pk(sqon_dbsrv *srv, const char *table, char **out);
+int sqon_get_pk (sqon_dbsrv *srv, const char *table, char **out);
 
 #ifdef __cplusplus
 }

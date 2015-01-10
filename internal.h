@@ -4,7 +4,7 @@
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Affero General Public License as published by
- *  the Free Software Foundation.
+ *  the Free Software Foundation, version 3 only.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -20,20 +20,23 @@
 
 #include "sqon.h"
 
-union res {
-    MYSQL_RES *mysql;
+union res
+{
+  MYSQL_RES *mysql;
 };
 
-union fields {
-    MYSQL_FIELD *mysql;
+union fields
+{
+  MYSQL_FIELD *mysql;
 };
 
-union row {
-    MYSQL_ROW mysql;
+union row
+{
+  MYSQL_ROW mysql;
 };
 
-int res_to_json(uint8_t type, void *res, char **out, const char *pk);
+int res_to_json (uint8_t type, void *res, char **out, const char *pk);
 
-int sqon_to_sql(sqon_dbsrv *srv, const char *in, char *out, size_t n);
+int sqon_to_sql (sqon_dbsrv *srv, const char *in, char *out, size_t n);
 
 #endif
