@@ -324,33 +324,25 @@ json_to_csv (sqon_dbsrv * srv, json_t * in, char *out, size_t n,
 }
 
 static int
-insert (sqon_dbsrv * srv, json_t * in, char *out, size_t n)
+insert (sqon_dbsrv * srv, const char *table, json_t * in, char *out, size_t n)
 {
   json_incref (in);
   int rc = 0;
   const char *fmt = "INSERT INTO %s(%s) VALUES(%s)";
-  const char *key;
   json_t *value, *cols, *vals;
-  char *table, *columns, *values;
+  char *columns, *values;
+  size_t index;
 
-  if (!json_is_object (in))
+  if (!json_is_array (in))
     {
       json_decref (in);
       return SQON_TYPEERROR;
-    }
-
-  table = calloc (n, sizeof (char));
-  if (NULL == table)
-    {
-      json_decref (in);
-      return SQON_MEMORYERROR;
     }
 
   columns = calloc (n, sizeof (char));
   if (NULL == columns)
     {
       json_decref (in);
-      free (table);
       return SQON_MEMORYERROR;
     }
 
@@ -358,82 +350,59 @@ insert (sqon_dbsrv * srv, json_t * in, char *out, size_t n)
   if (NULL == values)
     {
       json_decref (in);
-      free (table);
       free (columns);
       return SQON_MEMORYERROR;
     }
 
-  json_object_foreach (in, key, value)
+  json_array_foreach (in, index, value)
   {
     switch (json_typeof (value))
       {
-      case JSON_STRING:
-	if (!strcmp (key, "table"))
-	  {
-	    rc = snprintf (table, n, "%s", json_string_value (value));
-	    if ((size_t) rc >= n)
-	      rc = SQON_OVERFLOW;
-	    else
-	      rc = 0;
-	  }
-	else
-	  {
-	    rc = SQON_UNSUPPORTED;
-	  }
-	break;
-
       case JSON_OBJECT:
-	if (!strcmp (key, "values"))
+	cols = json_array ();
+	if (NULL == cols)
 	  {
-	    cols = json_array ();
-	    if (NULL == cols)
-	      {
-		rc = SQON_MEMORYERROR;
-		break;
-	      }
-	    vals = json_array ();
-	    if (NULL == vals)
-	      {
-		json_decref (cols);
-		rc = SQON_MEMORYERROR;
-		break;
-	      }
-
-	    const char *objkey;
-	    json_t *objval;
-	    json_object_foreach (value, objkey, objval)
-	    {
-	      rc = json_array_append_new (cols, json_string (objkey));
-	      if (rc)
-		{
-		  rc = SQON_MEMORYERROR;
-		  break;
-		}
-
-	      rc = json_array_append (vals, objval);
-	      if (rc)
-		{
-		  rc = SQON_MEMORYERROR;
-		  break;
-		}
-	    }
-
-	    if (!rc)
-	      {
-		rc = json_to_csv (srv, cols, columns, n, true, false);
-		if (rc)
-		  break;
-		rc = json_to_csv (srv, vals, values, n, true, true);
-		if (rc)
-		  break;
-	      }
+	    rc = SQON_MEMORYERROR;
+	    break;
+	  }
+	vals = json_array ();
+	if (NULL == vals)
+	  {
 	    json_decref (cols);
-	    json_decref (vals);
+	    rc = SQON_MEMORYERROR;
+	    break;
 	  }
-	else
+	
+	const char *objkey;
+	json_t *objval;
+	json_object_foreach (value, objkey, objval)
 	  {
-	    rc = SQON_UNSUPPORTED;
+	    rc = json_array_append_new (cols, json_string (objkey));
+	    if (rc)
+	      {
+		rc = SQON_MEMORYERROR;
+		break;
+	      }
+
+	    rc = json_array_append (vals, objval);
+	    if (rc)
+	      {
+		rc = SQON_MEMORYERROR;
+		break;
+	      }
 	  }
+
+	if (!rc)
+	  {
+	    rc = json_to_csv (srv, cols, columns, n, true, false);
+	    if (rc)
+	      break;
+	    rc = json_to_csv (srv, vals, values, n, true, true);
+	    if (rc)
+	      break;
+	  }
+	json_decref (cols);
+	json_decref (vals);
 	break;
 
       default:
@@ -457,7 +426,6 @@ insert (sqon_dbsrv * srv, json_t * in, char *out, size_t n)
     {
       rc = SQON_INCOMPLETE;
     }
-  free (table);
   free (columns);
   free (values);
   json_decref (in);
@@ -470,8 +438,8 @@ sqon_to_sql (sqon_dbsrv * srv, const char *in, char *out, size_t n)
   int rc = 0;
   json_t *root, *value, *subvalue;
   char *temp;
-  size_t written = 1, towrite, index;
-  const char *key;
+  size_t written = 1, towrite;
+  const char *key, *subkey;
   const char *semi = ";";
   const size_t slen = strlen (semi);
 /*
@@ -503,13 +471,11 @@ sqon_to_sql (sqon_dbsrv * srv, const char *in, char *out, size_t n)
   {
     if (!strcmp (key, "insert"))
       {
-	if (json_is_array (value))
+	if (json_is_object (value))
 	  {
-	    json_incref (value);
-
-	    json_array_foreach (value, index, subvalue)
+	    json_object_foreach (value, subkey, subvalue)
 	    {
-	      rc = insert (srv, subvalue, temp, n);
+	      rc = insert (srv, subkey, subvalue, temp, n);
 	      if (rc)
 		break;
 	      if ((towrite = written + strlen (temp)) < n)
@@ -530,7 +496,6 @@ sqon_to_sql (sqon_dbsrv * srv, const char *in, char *out, size_t n)
 		}
 	    }
 
-	    json_decref (value);
 	    if (rc)
 	      break;
 	  }
