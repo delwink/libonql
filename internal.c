@@ -339,6 +339,12 @@ insert (sqon_dbsrv * srv, const char *table, json_t * in, char *out, size_t n)
       return SQON_TYPEERROR;
     }
 
+  if (!(strlen (table) > 0))
+    {
+      json_decref (in);
+      return SQON_INCOMPLETE;
+    }
+
   columns = calloc (n, sizeof (char));
   if (NULL == columns)
     {
@@ -414,18 +420,12 @@ insert (sqon_dbsrv * srv, const char *table, json_t * in, char *out, size_t n)
       break;
   }
 
-  if (strlen (table) > 0)
-    {
-      rc = snprintf (out, n, fmt, table, columns, values);
-      if ((size_t) rc >= n)
-	rc = SQON_OVERFLOW;
-      else
-	rc = 0;
-    }
+  rc = snprintf (out, n, fmt, table, columns, values);
+  if ((size_t) rc >= n)
+    rc = SQON_OVERFLOW;
   else
-    {
-      rc = SQON_INCOMPLETE;
-    }
+    rc = 0;
+
   free (columns);
   free (values);
   json_decref (in);
