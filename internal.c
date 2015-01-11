@@ -237,91 +237,91 @@ json_to_csv (sqon_dbsrv * srv, json_t * in, char *out, size_t n,
 
   left = json_array_size (in);
   json_array_foreach (in, index, value)
-  {
-    switch (json_typeof (value))
-      {
-      case JSON_STRING:
-	if (escape_strings)
-	  {
-	    const char *s = json_string_value (value);
-	    bool stillquote = quote;
-	    if (quote && !(stillquote = '\\' != *s))
-	      ++s;
-	    rc = escape (srv, s, temp, n, stillquote);
-	  }
-	else
-	  {
-	    strcpy (temp, json_string_value (value));
-	  }
+    {
+      switch (json_typeof (value))
+	{
+	case JSON_STRING:
+	  if (escape_strings)
+	    {
+	      const char *s = json_string_value (value);
+	      bool stillquote = quote;
+	      if (quote && !(stillquote = '\\' != *s))
+		++s;
+	      rc = escape (srv, s, temp, n, stillquote);
+	    }
+	  else
+	    {
+	      strcpy (temp, json_string_value (value));
+	    }
+	  break;
+	  
+	case JSON_INTEGER:
+	  rc = snprintf (temp, n, "%" JSON_INTEGER_FORMAT,
+			 json_integer_value (value));
+	  if ((size_t) rc >= n)
+	    rc = SQON_OVERFLOW;
+	  else
+	    rc = 0;
+	  break;
+	  
+	case JSON_REAL:
+	  rc = snprintf (temp, n, "%f", json_real_value (value));
+	  if ((size_t) rc >= n)
+	    rc = SQON_OVERFLOW;
+	  else
+	    rc = 0;
+	  break;
+	  
+	case JSON_TRUE:
+	  rc = snprintf (temp, n, "1");
+	  if ((size_t) rc >= n)
+	    rc = SQON_OVERFLOW;
+	  else
+	    rc = 0;
+	  break;
+	  
+	case JSON_FALSE:
+	  rc = snprintf (temp, n, "0");
+	  if ((size_t) rc >= n)
+	    rc = SQON_OVERFLOW;
+	  else
+	    rc = 0;
+	  break;
+	  
+	case JSON_NULL:
+	  rc = snprintf (temp, n, "'NULL'");
+	  if ((size_t) rc >= n)
+	    rc = SQON_OVERFLOW;
+	  else
+	    rc = 0;
+	  break;
+	  
+	default:
+	  rc = SQON_UNSUPPORTED;
+	  break;
+	}
+      
+      if (rc)
 	break;
-
-      case JSON_INTEGER:
-	rc = snprintf (temp, n, "%" JSON_INTEGER_FORMAT,
-		       json_integer_value (value));
-	if ((size_t) rc >= n)
-	  rc = SQON_OVERFLOW;
-	else
-	  rc = 0;
-	break;
-
-      case JSON_REAL:
-	rc = snprintf (temp, n, "%f", json_real_value (value));
-	if ((size_t) rc >= n)
-	  rc = SQON_OVERFLOW;
-	else
-	  rc = 0;
-	break;
-
-      case JSON_TRUE:
-	rc = snprintf (temp, n, "1");
-	if ((size_t) rc >= n)
-	  rc = SQON_OVERFLOW;
-	else
-	  rc = 0;
-	break;
-
-      case JSON_FALSE:
-	rc = snprintf (temp, n, "0");
-	if ((size_t) rc >= n)
-	  rc = SQON_OVERFLOW;
-	else
-	  rc = 0;
-	break;
-
-      case JSON_NULL:
-	rc = snprintf (temp, n, "'NULL'");
-	if ((size_t) rc >= n)
-	  rc = SQON_OVERFLOW;
-	else
-	  rc = 0;
-	break;
-
-      default:
-	rc = SQON_UNSUPPORTED;
-	break;
-      }
-
-    if (rc)
-      break;
-
-    written += strlen (temp);
-
-    if (--left > 0)
-      {
-	if (written + clen < n)
-	  {
-	    strcat (temp, c);
-	    written += clen;
-	  }
-	else
-	  {
-	    break;
-	  }
-      }
-
-    strcat (out, temp);
-  }
-
+      
+      written += strlen (temp);
+      
+      if (--left > 0)
+	{
+	  if (written + clen < n)
+	    {
+	      strcat (temp, c);
+	      written += clen;
+	    }
+	  else
+	    {
+	      break;
+	    }
+	}
+      
+      strcat (out, temp);
+    }
+  
   free (temp);
   json_decref (in);
   return rc;
@@ -365,64 +365,64 @@ insert (sqon_dbsrv * srv, const char *table, json_t * in, char *out, size_t n)
     }
 
   json_array_foreach (in, index, value)
-  {
-    switch (json_typeof (value))
-      {
-      case JSON_OBJECT:
-	cols = json_array ();
-	if (NULL == cols)
-	  {
-	    rc = SQON_MEMORYERROR;
-	    break;
-	  }
-	vals = json_array ();
-	if (NULL == vals)
-	  {
-	    json_decref (cols);
-	    rc = SQON_MEMORYERROR;
-	    break;
-	  }
+    {
+      switch (json_typeof (value))
+	{
+	case JSON_OBJECT:
+	  cols = json_array ();
+	  if (NULL == cols)
+	    {
+	      rc = SQON_MEMORYERROR;
+	      break;
+	    }
+	  vals = json_array ();
+	  if (NULL == vals)
+	    {
+	      json_decref (cols);
+	      rc = SQON_MEMORYERROR;
+	      break;
+	    }
 	
-	const char *objkey;
-	json_t *objval;
-	json_object_foreach (value, objkey, objval)
-	  {
-	    rc = json_array_append_new (cols, json_string (objkey));
-	    if (rc)
-	      {
-		rc = SQON_MEMORYERROR;
+	  const char *objkey;
+	  json_t *objval;
+	  json_object_foreach (value, objkey, objval)
+	    {
+	      rc = json_array_append_new (cols, json_string (objkey));
+	      if (rc)
+		{
+		  rc = SQON_MEMORYERROR;
+		  break;
+		}
+
+	      rc = json_array_append (vals, objval);
+	      if (rc)
+		{
+		  rc = SQON_MEMORYERROR;
+		  break;
+		}
+	    }
+
+	  if (!rc)
+	    {
+	      rc = json_to_csv (srv, cols, columns, n, true, false);
+	      if (rc)
 		break;
-	      }
-
-	    rc = json_array_append (vals, objval);
-	    if (rc)
-	      {
-		rc = SQON_MEMORYERROR;
+	      rc = json_to_csv (srv, vals, values, n, true, true);
+	      if (rc)
 		break;
-	      }
-	  }
+	    }
+	  json_decref (cols);
+	  json_decref (vals);
+	  break;
 
-	if (!rc)
-	  {
-	    rc = json_to_csv (srv, cols, columns, n, true, false);
-	    if (rc)
-	      break;
-	    rc = json_to_csv (srv, vals, values, n, true, true);
-	    if (rc)
-	      break;
-	  }
-	json_decref (cols);
-	json_decref (vals);
+	default:
+	  rc = SQON_UNSUPPORTED;
+	  break;
+	}
+
+      if (rc)
 	break;
-
-      default:
-	rc = SQON_UNSUPPORTED;
-	break;
-      }
-
-    if (rc)
-      break;
-  }
+    }
 
   rc = snprintf (out, n, fmt, table, columns, values);
   if ((size_t) rc >= n)
@@ -472,61 +472,61 @@ sqon_to_sql (sqon_dbsrv * srv, const char *in, char *out, size_t n)
   *out = '\0'; /* prevent appending to existing string in buffer */
 
   json_object_foreach (root, key, value)
-  {
-    if (!strcmp (key, "insert"))
-      {
-	if (json_is_object (value))
-	  {
-	    json_object_foreach (value, subkey, subvalue)
+    {
+      if (!strcmp (key, "insert"))
+	{
+	  if (json_is_object (value))
 	    {
-	      rc = insert (srv, subkey, subvalue, temp, n);
+	      json_object_foreach (value, subkey, subvalue)
+		{
+		  rc = insert (srv, subkey, subvalue, temp, n);
+		  if (rc)
+		    break;
+		  if ((towrite = written + strlen (temp)) < n)
+		    {
+		      if ('\0' != *out)
+			if ((towrite += slen) < n)
+			  {
+			    strcat (out, semi);
+			    written += slen;
+			  }
+		      strcat (out, temp);
+		      written += strlen (temp);
+		    }
+		  else
+		    {
+		      rc = SQON_OVERFLOW;
+		      break;
+		    }
+		}
+
 	      if (rc)
 		break;
-	      if ((towrite = written + strlen (temp)) < n)
-		{
-		  if ('\0' != *out)
-		    if ((towrite += slen) < n)
-		      {
-			strcat (out, semi);
-			written += slen;
-		      }
-		  strcat (out, temp);
-		  written += strlen (temp);
-		}
-	      else
-		{
-		  rc = SQON_OVERFLOW;
-		  break;
-		}
 	    }
-
-	    if (rc)
+	  else
+	    {
+	      rc = SQON_TYPEERROR;
 	      break;
-	  }
-	else
-	  {
-	    rc = SQON_TYPEERROR;
-	    break;
-	  }
-      }
-    else if (!strcmp (key, "update"))
-      {
-      }
-    else if (!strcmp (key, "select"))
-      {
-      }
-    else if (!strcmp (key, "call"))
-      {
-      }
-    else if (!strcmp (key, "grant") || !strcmp (key, "revoke"))
-      {
-      }
-    else
-      {
-	rc = SQON_UNSUPPORTED;
-	break;
-      }
-  }
+	    }
+	}
+      else if (!strcmp (key, "update"))
+	{
+	}
+      else if (!strcmp (key, "select"))
+	{
+	}
+      else if (!strcmp (key, "call"))
+	{
+	}
+      else if (!strcmp (key, "grant") || !strcmp (key, "revoke"))
+	{
+	}
+      else
+	{
+	  rc = SQON_UNSUPPORTED;
+	  break;
+	}
+    }
 
   free (temp);
   json_decref (root);
