@@ -243,7 +243,11 @@ json_to_csv (sqon_dbsrv * srv, json_t * in, char *out, size_t n,
       case JSON_STRING:
 	if (escape_strings)
 	  {
-	    rc = escape (srv, json_string_value (value), temp, n, quote);
+	    const char *s = json_string_value (value);
+	    bool stillquote = quote;
+	    if (quote && !(stillquote = '\\' != *s))
+	      ++s;
+	    rc = escape (srv, s, temp, n, stillquote);
 	  }
 	else
 	  {
