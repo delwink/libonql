@@ -39,6 +39,10 @@ sqon_malloc (size_t n)
 {
   /* Store the memory area size in the beginning of the block */
   void *v = malloc (n + sizeof (size_t));
+
+  if (NULL == v)
+    return NULL;
+
   *((size_t *) v) = n;
   return v + sizeof (size_t);
 }
