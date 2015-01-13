@@ -149,7 +149,7 @@ escape (sqon_dbsrv *srv, const char *in, char *out, size_t n, bool quote)
   int rc = 0;
   bool connected = srv->isopen;
   size_t extra = 1 + quote ? 2 : 0;
-  char *temp = calloc ((strlen (in) * 2 + extra), sizeof (char));
+  char *temp = sqon_malloc ((strlen (in) * 2 + extra) * sizeof (char));
   if (NULL == temp)
     return SQON_MEMORYERROR;
 
@@ -158,7 +158,7 @@ escape (sqon_dbsrv *srv, const char *in, char *out, size_t n, bool quote)
       rc = sqon_connect (srv);
       if (rc)
 	{
-	  free (temp);
+	  sqon_free (temp);
 	  return SQON_CONNECTERR;
 	}
     }
@@ -197,7 +197,7 @@ escape (sqon_dbsrv *srv, const char *in, char *out, size_t n, bool quote)
   if (!connected)
     sqon_close (srv);
 
-  free (temp);
+  sqon_free (temp);
   return rc;
 }
 
@@ -289,7 +289,7 @@ json_to_csv (sqon_dbsrv *srv, json_t *in, char *out, size_t n, bool quote)
       return SQON_TYPEERROR;
     }
 
-  temp = calloc (n, sizeof (char));
+  temp = sqon_malloc (n * sizeof (char));
   if (NULL == temp)
     {
       json_decref (in);
@@ -324,7 +324,7 @@ json_to_csv (sqon_dbsrv *srv, json_t *in, char *out, size_t n, bool quote)
       strcat (out, temp);
     }
   
-  free (temp);
+  sqon_free (temp);
   json_decref (in);
   return rc;
 }
@@ -351,18 +351,18 @@ insert (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
       return SQON_INCOMPLETE;
     }
 
-  columns = calloc (n, sizeof (char));
+  columns = sqon_malloc (n * sizeof (char));
   if (NULL == columns)
     {
       json_decref (in);
       return SQON_MEMORYERROR;
     }
 
-  values = calloc (n, sizeof (char));
+  values = sqon_malloc (n * sizeof (char));
   if (NULL == values)
     {
       json_decref (in);
-      free (columns);
+      sqon_free (columns);
       return SQON_MEMORYERROR;
     }
 
@@ -432,8 +432,8 @@ insert (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
   else
     rc = 0;
 
-  free (columns);
-  free (values);
+  sqon_free (columns);
+  sqon_free (values);
   json_decref (in);
   return rc;
 }
@@ -592,7 +592,7 @@ sqon_to_sql (sqon_dbsrv * srv, const char *in, char *out, size_t n)
       return SQON_LOADERROR;
     }
 
-  temp = calloc (n, sizeof (char));
+  temp = sqon_malloc (n * sizeof (char));
   if (NULL == temp)
     {
       json_decref (root);
@@ -662,7 +662,7 @@ sqon_to_sql (sqon_dbsrv * srv, const char *in, char *out, size_t n)
 	}
     }
 
-  free (temp);
+  sqon_free (temp);
   json_decref (root);
   return rc;
 }
