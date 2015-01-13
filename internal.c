@@ -296,8 +296,6 @@ json_to_csv (sqon_dbsrv *srv, json_t *in, char *out, size_t n, bool quote)
       return SQON_MEMORYERROR;
     }
 
-  const char *c = ",";
-  size_t clen = strlen (c);
   *out = '\0';			/* prevent appending */
 
   left = json_array_size (in);
@@ -447,8 +445,7 @@ update (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
   int rc = 0;
   const char *fmt = "UPDATE %s SET %s %s";
   json_t *value, *subvalue;
-  char *key, *subkey, *set, *conditions, *temp;
-  size_t to_conds = 1;
+  char *key, *subkey, *set, *conditions;
 
   if (!json_is_object (in))
     {
@@ -477,15 +474,6 @@ update (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
       return SQON_MEMORYERROR;
     }
 
-  temp = sqon_malloc (n * sizeof (char));
-  if (NULL == temp)
-    {
-      json_decref (in);
-      sqon_free (set);
-      sqon_free (conditions);
-      return SQON_MEMORYERROR;
-    }
-
   conditions[0] = '\0';
 
   json_object_foreach (in, key, value)
@@ -495,9 +483,23 @@ update (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
 	case JSON_OBJECT:
 	  if (!strcmp (key, "values"))
 	    {
+	      size_t left = json_object_size (value);
 	      json_object_foreach (value, subkey, subvalue)
 		{
-		  
+		  rc = equal (srv, subvalue, set, n);
+		  if (rc)
+		    break;
+
+		  if (--left > 0)
+		    {
+		      if ((strlen (set) + clen) < n)
+			strcat (set, c);
+		      else
+			rc = SQON_OVERFLOW;
+		    }
+
+		  if (rc)
+		    break;
 		}
 	    }
 	  else if (!strcmp (key, "where"))
@@ -521,7 +523,13 @@ update (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
 	}
     }
 
-  sqon_free (temp);
+  
+
+  if ((size_t) snprintf (out, n, fmt, set, conditions) >= n)
+    {
+      rc = SQON_OVERFLOW;
+    }
+
   sqon_free (conditions);
   sqon_free (set);
   json_decref (in);
@@ -567,7 +575,7 @@ sqon_to_sql (sqon_dbsrv * srv, const char *in, char *out, size_t n)
   int rc = 0;
   json_t *root, *value, *subvalue;
   char *temp;
-  size_t written = 1, towrite;
+  size_t written = 1;
   const char *key, *subkey;
 /*
     const char *SELECT = "SELECT %s %s %s";

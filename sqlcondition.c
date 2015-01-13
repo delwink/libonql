@@ -22,9 +22,6 @@
 #include "internal.h"
 #include "sqlcondition.h"
 
-#define c ","
-#define clen strlen (c)
-
 int
 equal (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
 {
@@ -127,7 +124,12 @@ sqlcondition (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
       return SQON_MEMORYERROR;
     }
 
-  *out = '\0';
+  if ((size_t) snprintf (out, n, "WHERE ") >= n)
+    {
+      json_decref (in);
+      sqon_free (temp);
+      return SQON_OVERFLOW;
+    }
 
   size_t left = json_object_size (in);
   json_object_foreach (in, key, value)

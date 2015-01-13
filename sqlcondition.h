@@ -20,6 +20,9 @@
 
 #include <jansson.h>
 
+#define c ","
+#define clen strlen (c)
+
 int equal (sqon_dbsrv *srv, json_t *in, char *out, size_t n);
 
 int sqlcondition (sqon_dbsrv *srv, json_t *in, char *out, size_t n);
