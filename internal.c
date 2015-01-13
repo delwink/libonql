@@ -18,10 +18,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <jansson.h>
-#include <mysql.h>
 
 #include "internal.h"
+#include "sqlcondition.h"
 
 #define PERM_GRANT 1
 #define PERM_REVOKE 2
@@ -144,8 +143,8 @@ res_to_json (uint8_t type, void *res, char **out, const char *pk)
   return rc;
 }
 
-static int
-escape (sqon_dbsrv * srv, const char *in, char *out, size_t n, bool quote)
+int
+escape (sqon_dbsrv *srv, const char *in, char *out, size_t n, bool quote)
 {
   int rc = 0;
   bool connected = srv->isopen;
@@ -203,11 +202,77 @@ escape (sqon_dbsrv * srv, const char *in, char *out, size_t n, bool quote)
 }
 
 int
-json_to_csv (sqon_dbsrv * srv, json_t * in, char *out, size_t n,
-	     bool escape_strings, bool quote)
+json_to_sql_type (sqon_dbsrv *srv, json_t *in, char *out, size_t n, bool quote)
 {
   json_incref (in);
-  int rc;
+  int rc = 0;
+  const char *s;
+  
+  switch (json_typeof (in))
+    {
+    case JSON_STRING:
+      s = json_string_value (in);
+      bool stillquote = quote;
+      if (quote && !(stillquote = '\\' != *s))
+	++s;
+      rc = escape (srv, s, out, n, stillquote);
+      break;
+      
+    case JSON_INTEGER:
+      rc = snprintf (out, n, "%" JSON_INTEGER_FORMAT,
+		     json_integer_value (in));
+      if ((size_t) rc >= n)
+	rc = SQON_OVERFLOW;
+      else
+	rc = 0;
+      break;
+      
+    case JSON_REAL:
+      rc = snprintf (out, n, "%f", json_real_value (in));
+      if ((size_t) rc >= n)
+	rc = SQON_OVERFLOW;
+      else
+	rc = 0;
+      break;
+      
+    case JSON_TRUE:
+      rc = snprintf (out, n, "1");
+      if ((size_t) rc >= n)
+	rc = SQON_OVERFLOW;
+      else
+	rc = 0;
+      break;
+      
+    case JSON_FALSE:
+      rc = snprintf (out, n, "0");
+      if ((size_t) rc >= n)
+	rc = SQON_OVERFLOW;
+      else
+	rc = 0;
+      break;
+      
+    case JSON_NULL:
+      rc = snprintf (out, n, "'NULL'");
+      if ((size_t) rc >= n)
+	rc = SQON_OVERFLOW;
+      else
+	rc = 0;
+      break;
+      
+    default:
+      rc = SQON_UNSUPPORTED;
+      break;
+    }
+
+  json_decref (in);
+  return rc;
+}
+
+static int
+json_to_csv (sqon_dbsrv *srv, json_t *in, char *out, size_t n, bool quote)
+{
+  json_incref (in);
+  int rc = 0;
   json_t *value;
   size_t index, written = 1, left;
   char *temp;
@@ -238,68 +303,7 @@ json_to_csv (sqon_dbsrv * srv, json_t * in, char *out, size_t n,
   left = json_array_size (in);
   json_array_foreach (in, index, value)
     {
-      switch (json_typeof (value))
-	{
-	case JSON_STRING:
-	  if (escape_strings)
-	    {
-	      const char *s = json_string_value (value);
-	      bool stillquote = quote;
-	      if (quote && !(stillquote = '\\' != *s))
-		++s;
-	      rc = escape (srv, s, temp, n, stillquote);
-	    }
-	  else
-	    {
-	      strcpy (temp, json_string_value (value));
-	    }
-	  break;
-	  
-	case JSON_INTEGER:
-	  rc = snprintf (temp, n, "%" JSON_INTEGER_FORMAT,
-			 json_integer_value (value));
-	  if ((size_t) rc >= n)
-	    rc = SQON_OVERFLOW;
-	  else
-	    rc = 0;
-	  break;
-	  
-	case JSON_REAL:
-	  rc = snprintf (temp, n, "%f", json_real_value (value));
-	  if ((size_t) rc >= n)
-	    rc = SQON_OVERFLOW;
-	  else
-	    rc = 0;
-	  break;
-	  
-	case JSON_TRUE:
-	  rc = snprintf (temp, n, "1");
-	  if ((size_t) rc >= n)
-	    rc = SQON_OVERFLOW;
-	  else
-	    rc = 0;
-	  break;
-	  
-	case JSON_FALSE:
-	  rc = snprintf (temp, n, "0");
-	  if ((size_t) rc >= n)
-	    rc = SQON_OVERFLOW;
-	  else
-	    rc = 0;
-	  break;
-	  
-	case JSON_NULL:
-	  rc = snprintf (temp, n, "'NULL'");
-	  if ((size_t) rc >= n)
-	    rc = SQON_OVERFLOW;
-	  else
-	    rc = 0;
-	  break;
-	  
-	default:
-	  rc = SQON_UNSUPPORTED;
-	  break;
-	}
+      json_to_sql_type(srv, value, temp, n, quote);
       
       if (rc)
 	break;
@@ -308,13 +312,13 @@ json_to_csv (sqon_dbsrv * srv, json_t * in, char *out, size_t n,
       
       if (--left > 0)
 	{
-	  if (written + clen < n)
+	  if ((written += clen) < n)
 	    {
 	      strcat (temp, c);
-	      written += clen;
 	    }
 	  else
 	    {
+	      rc = SQON_OVERFLOW;
 	      break;
 	    }
 	}
@@ -328,7 +332,7 @@ json_to_csv (sqon_dbsrv * srv, json_t * in, char *out, size_t n,
 }
 
 static int
-insert (sqon_dbsrv * srv, const char *table, json_t * in, char *out, size_t n)
+insert (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
 {
   json_incref (in);
   int rc = 0;
@@ -404,10 +408,10 @@ insert (sqon_dbsrv * srv, const char *table, json_t * in, char *out, size_t n)
 
 	  if (!rc)
 	    {
-	      rc = json_to_csv (srv, cols, columns, n, true, false);
+	      rc = json_to_csv (srv, cols, columns, n, false);
 	      if (rc)
 		break;
-	      rc = json_to_csv (srv, vals, values, n, true, true);
+	      rc = json_to_csv (srv, vals, values, n, true);
 	      if (rc)
 		break;
 	    }
@@ -436,6 +440,127 @@ insert (sqon_dbsrv * srv, const char *table, json_t * in, char *out, size_t n)
   return rc;
 }
 
+static int
+update (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
+{
+  json_incref (in);
+  int rc = 0;
+  const char *fmt = "UPDATE %s SET %s %s";
+  json_t *value, *subvalue;
+  char *key, *subkey, *set, *conditions, *temp;
+  size_t to_conds = 1;
+
+  if (!json_is_object (in))
+    {
+      json_decref (in);
+      return SQON_TYPEERROR;
+    }
+
+  if (!(strlen (table) > 0))
+    {
+      json_decref (in);
+      return SQON_INCOMPLETE;
+    }
+
+  set = sqon_malloc (n * sizeof (char));
+  if (NULL == set)
+    {
+      json_decref (in);
+      return SQON_MEMORYERROR;
+    }
+
+  conditions = sqon_malloc (n * sizeof (char));
+  if (NULL == conditions)
+    {
+      json_decref (in);
+      sqon_free (set);
+      return SQON_MEMORYERROR;
+    }
+
+  temp = sqon_malloc (n * sizeof (char));
+  if (NULL == temp)
+    {
+      json_decref (in);
+      sqon_free (set);
+      sqon_free (conditions);
+      return SQON_MEMORYERROR;
+    }
+
+  conditions[0] = '\0';
+
+  json_object_foreach (in, key, value)
+    {
+      switch (json_typeof (value))
+	{
+	case JSON_OBJECT:
+	  if (!strcmp (key, "values"))
+	    {
+	      json_object_foreach (value, subkey, subvalue)
+		{
+		  
+		}
+	    }
+	  else if (!strcmp (key, "where"))
+	    {
+	      json_object_foreach (value, subkey, subvalue)
+		{
+		  rc = sqlcondition (srv, subvalue, conditions, n);
+		  if (rc)
+		    break;
+		}
+	    }
+	  else
+	    {
+	      rc = SQON_UNSUPPORTED;
+	    }
+	  break;
+
+	default:
+	  rc = SQON_UNSUPPORTED;
+	  break;
+	}
+    }
+
+  sqon_free (temp);
+  sqon_free (conditions);
+  sqon_free (set);
+  json_decref (in);
+  return rc;
+}
+
+static int
+write_query_string (size_t *written, const char *temp, char *out, size_t n)
+{
+  size_t towrite = *written + strlen (temp);
+  const char *semi = ";";
+  const size_t slen = strlen (semi);
+
+  if (towrite < n)
+    {
+      if ('\0' != *out)
+	{
+	  if ((towrite += slen) < n)
+	    {
+	      strcat (out, semi);
+	      *written += slen;
+	    }
+	  else
+	    {
+	      return SQON_OVERFLOW;
+	    }
+	}
+
+      strcat (out, temp);
+      *written += strlen (temp);
+    }
+  else
+    {
+      return SQON_OVERFLOW;
+    }
+
+  return 0;
+}
+
 int
 sqon_to_sql (sqon_dbsrv * srv, const char *in, char *out, size_t n)
 {
@@ -444,10 +569,7 @@ sqon_to_sql (sqon_dbsrv * srv, const char *in, char *out, size_t n)
   char *temp;
   size_t written = 1, towrite;
   const char *key, *subkey;
-  const char *semi = ";";
-  const size_t slen = strlen (semi);
 /*
-    const char *UPDATE = "UPDATE %s SET %s %s";
     const char *SELECT = "SELECT %s %s %s";
     const char *CALL   = "CALL %s(%s)";
     const char *PERM   = "%s %s ON %s %s '%s'@'%s' %s";
@@ -482,22 +604,9 @@ sqon_to_sql (sqon_dbsrv * srv, const char *in, char *out, size_t n)
 		  rc = insert (srv, subkey, subvalue, temp, n);
 		  if (rc)
 		    break;
-		  if ((towrite = written + strlen (temp)) < n)
-		    {
-		      if ('\0' != *out)
-			if ((towrite += slen) < n)
-			  {
-			    strcat (out, semi);
-			    written += slen;
-			  }
-		      strcat (out, temp);
-		      written += strlen (temp);
-		    }
-		  else
-		    {
-		      rc = SQON_OVERFLOW;
-		      break;
-		    }
+		  rc = write_query_string (&written, temp, out, n);
+		  if (rc)
+		    break;
 		}
 
 	      if (rc)
@@ -511,6 +620,23 @@ sqon_to_sql (sqon_dbsrv * srv, const char *in, char *out, size_t n)
 	}
       else if (!strcmp (key, "update"))
 	{
+	  if (json_is_object (value))
+	    {
+	      json_object_foreach (value, subkey, subvalue)
+		{
+		  rc = update (srv, subkey, subvalue, temp, n);
+		  if (rc)
+		    break;
+		  rc = write_query_string (&written, temp, out, n);
+		  if (rc)
+		    break;
+		}
+	    }
+	  else
+	    {
+	      rc = SQON_TYPEERROR;
+	      break;
+	    }
 	}
       else if (!strcmp (key, "select"))
 	{

@@ -15,36 +15,13 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DELWINK_SQON_INTERNAL_H
-#define DELWINK_SQON_INTERNAL_H
+#ifndef DELWINK_SQON_SQLCONDITION_H
+#define DELWINK_SQON_SQLCONDITION_H
 
-#include <mysql.h>
 #include <jansson.h>
 
-#include "sqon.h"
+int equal (sqon_dbsrv *srv, json_t *in, char *out, size_t n);
 
-union res
-{
-  MYSQL_RES *mysql;
-};
-
-union fields
-{
-  MYSQL_FIELD *mysql;
-};
-
-union row
-{
-  MYSQL_ROW mysql;
-};
-
-int res_to_json (uint8_t type, void *res, char **out, const char *pk);
-
-int escape (sqon_dbsrv *srv, const char *in, char *out, size_t n, bool quote);
-
-int json_to_sql_type (sqon_dbsrv *srv, json_t *in, char *out, size_t n,
-		      bool quote);
-
-int sqon_to_sql (sqon_dbsrv *srv, const char *in, char *out, size_t n);
+int sqlcondition (sqon_dbsrv *srv, json_t *in, char *out, size_t n);
 
 #endif
