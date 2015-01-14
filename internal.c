@@ -484,14 +484,10 @@ update (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
 	  if (!strcmp (key, "values"))
 	    {
 	      rc = equal (srv, value, set, n);
-	      if (rc)
-		break;
 	    }
 	  else if (!strcmp (key, "where"))
 	    {
 	      rc = sqlcondition (srv, value, conditions, n);
-	      if (rc)
-		break;
 	    }
 	  else
 	    {
