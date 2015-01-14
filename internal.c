@@ -501,9 +501,7 @@ update (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
 	}
     }
 
-  
-
-  if ((size_t) snprintf (out, n, fmt, table, set, conditions) >= n)
+  if (!rc && (size_t) snprintf (out, n, fmt, table, set, conditions) >= n)
     {
       rc = SQON_OVERFLOW;
     }
