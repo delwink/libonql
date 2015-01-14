@@ -444,8 +444,8 @@ update (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
   json_incref (in);
   int rc = 0;
   const char *fmt = "UPDATE %s SET %s %s";
-  json_t *value, *subvalue;
-  char *key, *subkey, *set, *conditions;
+  json_t *value;
+  char *key, *set, *conditions;
 
   if (!json_is_object (in))
     {
@@ -483,33 +483,15 @@ update (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
 	case JSON_OBJECT:
 	  if (!strcmp (key, "values"))
 	    {
-	      size_t left = json_object_size (value);
-	      json_object_foreach (value, subkey, subvalue)
-		{
-		  rc = equal (srv, subvalue, set, n);
-		  if (rc)
-		    break;
-
-		  if (--left > 0)
-		    {
-		      if ((strlen (set) + clen) < n)
-			strcat (set, c);
-		      else
-			rc = SQON_OVERFLOW;
-		    }
-
-		  if (rc)
-		    break;
-		}
+	      rc = equal (srv, value, set, n);
+	      if (rc)
+		break;
 	    }
 	  else if (!strcmp (key, "where"))
 	    {
-	      json_object_foreach (value, subkey, subvalue)
-		{
-		  rc = sqlcondition (srv, subvalue, conditions, n);
-		  if (rc)
-		    break;
-		}
+	      rc = sqlcondition (srv, value, conditions, n);
+	      if (rc)
+		break;
 	    }
 	  else
 	    {
@@ -525,7 +507,7 @@ update (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
 
   
 
-  if ((size_t) snprintf (out, n, fmt, set, conditions) >= n)
+  if ((size_t) snprintf (out, n, fmt, table, set, conditions) >= n)
     {
       rc = SQON_OVERFLOW;
     }

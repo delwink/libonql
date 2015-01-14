@@ -32,6 +32,12 @@ equal (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
   json_t *value;
   char *col, *val, *temp;
 
+  if (!json_is_object (in))
+    {
+      json_decref (in);
+      return SQON_TYPEERROR;
+    }
+
   col = sqon_malloc (n * sizeof (char));
   if (NULL == col)
     {
@@ -60,10 +66,10 @@ equal (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
 
   json_object_foreach (in, key, value)
     {
-      rc = escape(srv, key, col, n, false);
+      rc = escape (srv, key, col, n, false);
       if (rc)
 	break;
-      rc = json_to_sql_type(srv, value, val, n, true);
+      rc = json_to_sql_type (srv, value, val, n, true);
       if (rc)
 	break;
 
@@ -81,15 +87,16 @@ equal (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
       if (rc)
 	break;
 
-      if ('\0' != *out && (written += clen) < n)
+      if ('\0' != *out)
 	{
-	  strcat (out, c);
+	  if ((written += clen) < n)
+	    strcat (out, c);
+	  else
+	    rc = SQON_OVERFLOW;
 	}
-      else
-	{
-	  rc = SQON_OVERFLOW;
-	  break;
-	}
+
+      if (rc)
+	break;
 
       strcat (out, temp);
     }
