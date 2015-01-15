@@ -22,6 +22,9 @@
 #include "sqon.h"
 #include "internal.h"
 
+#define empty "[]"
+#define emptylen strlen (empty)
+
 size_t QLEN = 0;
 
 static void *
@@ -157,9 +160,7 @@ sqon_query_sql (sqon_dbsrv * srv, const char *query, char **out,
 	  rc = (int) mysql_errno (srv->com);
 	  if (rc)
 	    return rc;
-	  const char *empty = "[]";
-	  const size_t len = strlen (empty);
-	  *out = sqon_malloc ((len + 1) * sizeof (char));
+	  *out = sqon_malloc ((emptylen + 1) * sizeof (char));
 	  strcpy (*out, empty);
 	}
       else
