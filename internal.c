@@ -25,6 +25,35 @@
 #define PERM_GRANT 1
 #define PERM_REVOKE 2
 
+#define semi ";"
+#define slen strlen (semi)
+
+static int
+check_pk (uint8_t type, union fields fields, size_t num_fields, const char *pk)
+{
+  int rc = 0;
+  size_t i;
+
+  switch (type)
+    {
+    case SQON_DBCONN_MYSQL:
+      for (i = 0; i < num_fields; ++i)
+	{
+	  if (strcmp (fields.mysql[i].name, pk))
+	    rc = SQON_NOPK;
+	  else
+	    break;
+	}
+      break;
+
+    default:
+      rc = SQON_UNSUPPORTED;
+      break;
+    }
+
+  return rc;
+}
+
 int
 res_to_json (uint8_t type, void *res, char **out, const char *pk)
 {
@@ -40,6 +69,7 @@ res_to_json (uint8_t type, void *res, char **out, const char *pk)
     root = json_array ();
   else
     root = json_object ();
+
   if (NULL == root)
     return SQON_MEMORYERROR;
 
@@ -56,18 +86,7 @@ res_to_json (uint8_t type, void *res, char **out, const char *pk)
       fields.mysql = mysql_fetch_fields (res);
       if (!arr)
 	{
-	  for (i = 0; i < num_fields; ++i)
-	    {
-	      if (strcmp (fields.mysql[i].name, pk))
-		{
-		  rc = SQON_NOPK;
-		}
-	      else
-		{
-		  rc = 0;
-		  break;
-		}
-	    }
+	  rc = check_pk (type, fields, num_fields, pk);
 	  if (rc)
 	    break;
 	}
@@ -105,17 +124,12 @@ res_to_json (uint8_t type, void *res, char **out, const char *pk)
 	    }
 
 	  if (arr)
-	    {
-	      json_array_append (root, jsonrow);
-	    }
+	    json_array_append (root, jsonrow);
 	  else if (NULL == json_object_get (root, vpk))
-	    {
-	      json_object_set (root, vpk, jsonrow);
-	    }
+	    json_object_set (root, vpk, jsonrow);
 	  else
-	    {
-	      rc = SQON_PKNOTUNIQUE;
-	    }
+	    rc = SQON_PKNOTUNIQUE;
+
 	  json_decref (jsonrow);
 	  if (rc)
 	    break;
@@ -136,9 +150,7 @@ res_to_json (uint8_t type, void *res, char **out, const char *pk)
   *out = json_dumps (root, JSON_PRESERVE_ORDER);
   json_decref (root);
   if (NULL == *out)
-    {
       rc = SQON_MEMORYERROR;
-    }
 
   return rc;
 }
@@ -516,8 +528,6 @@ static int
 write_query_string (size_t *written, const char *temp, char *out, size_t n)
 {
   size_t towrite = *written + strlen (temp);
-  const char *semi = ";";
-  const size_t slen = strlen (semi);
 
   if (towrite < n)
     {
