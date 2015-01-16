@@ -38,13 +38,17 @@ union row
   MYSQL_ROW mysql;
 };
 
-int res_to_json (uint8_t type, void *res, char **out, const char *pk);
+int
+res_to_json (uint8_t type, void *res, char **out, const char *pk);
 
-int escape (sqon_dbsrv *srv, const char *in, char *out, size_t n, bool quote);
+int
+escape (sqon_dbsrv *srv, const char *in, char *out, size_t n, bool quote);
 
-int json_to_sql_type (sqon_dbsrv *srv, json_t *in, char *out, size_t n,
-		      bool quote);
+int
+json_to_sql_type (sqon_dbsrv *srv, json_t *in, char *out, size_t n,
+		  bool quote);
 
-int sqon_to_sql (sqon_dbsrv *srv, const char *in, char *out, size_t n);
+int
+sqon_to_sql (sqon_dbsrv *srv, const char *in, char *out, size_t n);
 
 #endif
