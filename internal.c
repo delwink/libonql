@@ -61,7 +61,7 @@ res_to_json (uint8_t type, void *res, char **out, const char *pk)
   bool arr = (NULL == pk || !strcmp (pk, ""));
   json_t *root, *jsonrow;
   size_t num_fields, i;
-  char *vpk = NULL;
+  char *vpk;
   union fields fields;
   union row row;
 
