@@ -193,21 +193,24 @@ escape (sqon_dbsrv *srv, const char *in, char *out, size_t n, bool quote)
     {
     case SQON_DBCONN_MYSQL:
       written.ul = mysql_real_escape_string (srv->com, temp, in, strlen (in));
-      if (written.ul < n)
-	if (quote)
-	  {
-	    rc = snprintf (out, n, "'%s'", temp);
-	    if ((size_t) rc >= n)
-	      rc = SQON_OVERFLOW;
-	    else
-	      rc = 0;
-	  }
-	else
-	  {
-	    strcpy (out, temp);
-	  }
+      if (written.ul >= n)
+	{
+	  rc = SQON_OVERFLOW;
+	  break;
+	}
+
+      if (quote)
+	{
+	  rc = snprintf (out, n, "'%s'", temp);
+	  if ((size_t) rc >= n)
+	    rc = SQON_OVERFLOW;
+	  else
+	    rc = 0;
+	}
       else
-	rc = SQON_OVERFLOW;
+	{
+	  strcpy (out, temp);
+	}
       break;
 
     default:
@@ -317,7 +320,7 @@ json_to_csv (sqon_dbsrv *srv, json_t *in, char *out, size_t n, bool quote)
       return SQON_MEMORYERROR;
     }
 
-  *out = '\0';			/* prevent appending */
+  *out = '\0';
 
   left = json_array_size (in);
   json_array_foreach (in, index, value)
@@ -351,12 +354,79 @@ json_to_csv (sqon_dbsrv *srv, json_t *in, char *out, size_t n, bool quote)
 }
 
 static int
+insert_cols_vals (sqon_dbsrv *srv, json_t *in, char *columns, char *values,
+		  size_t n)
+{
+  int rc = 0;
+  json_t *cols, *vals, *value;
+  const char *key;
+
+  switch (json_typeof (in))
+    {
+    case JSON_OBJECT:
+      cols = json_array ();
+      if (NULL == cols)
+	{
+	  rc = SQON_MEMORYERROR;
+	  break;
+	}
+
+      vals = json_array ();
+      if (NULL == vals)
+	{
+	  json_decref (cols);
+	  rc = SQON_MEMORYERROR;
+	  break;
+	}
+
+      json_object_foreach (in, key, value)
+	{
+	  rc = json_array_append_new (cols, json_string (key));
+	  if (rc)
+	    {
+	      rc = SQON_MEMORYERROR;
+	      break;
+	    }
+
+	  rc = json_array_append (vals, value);
+	  if (rc)
+	    {
+	      rc = SQON_MEMORYERROR;
+	      break;
+	    }
+	}
+
+      if (!rc)
+	{
+	  rc = json_to_csv (srv, cols, columns, n, false);
+	  if (rc)
+	    {
+	      json_decref (cols);
+	      json_decref (vals);
+	      break;
+	    }
+	  rc = json_to_csv (srv, vals, values, n, true);
+	}
+
+      json_decref (cols);
+      json_decref (vals);
+      break;
+
+    default:
+      rc = SQON_UNSUPPORTED;
+      break;
+    }
+
+  return rc;
+}
+
+static int
 insert (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
 {
   json_incref (in);
   int rc = 0;
   const char *fmt = "INSERT INTO %s(%s) VALUES(%s)";
-  json_t *value, *cols, *vals;
+  json_t *value;
   char *columns, *values;
   size_t index;
 
@@ -389,59 +459,7 @@ insert (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
 
   json_array_foreach (in, index, value)
     {
-      switch (json_typeof (value))
-	{
-	case JSON_OBJECT:
-	  cols = json_array ();
-	  if (NULL == cols)
-	    {
-	      rc = SQON_MEMORYERROR;
-	      break;
-	    }
-	  vals = json_array ();
-	  if (NULL == vals)
-	    {
-	      json_decref (cols);
-	      rc = SQON_MEMORYERROR;
-	      break;
-	    }
-	
-	  const char *objkey;
-	  json_t *objval;
-	  json_object_foreach (value, objkey, objval)
-	    {
-	      rc = json_array_append_new (cols, json_string (objkey));
-	      if (rc)
-		{
-		  rc = SQON_MEMORYERROR;
-		  break;
-		}
-
-	      rc = json_array_append (vals, objval);
-	      if (rc)
-		{
-		  rc = SQON_MEMORYERROR;
-		  break;
-		}
-	    }
-
-	  if (!rc)
-	    {
-	      rc = json_to_csv (srv, cols, columns, n, false);
-	      if (rc)
-		break;
-	      rc = json_to_csv (srv, vals, values, n, true);
-	      if (rc)
-		break;
-	    }
-	  json_decref (cols);
-	  json_decref (vals);
-	  break;
-
-	default:
-	  rc = SQON_UNSUPPORTED;
-	  break;
-	}
+      rc = insert_cols_vals (srv, value, columns, values, n);
 
       if (rc)
 	break;
