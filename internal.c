@@ -54,14 +54,63 @@ check_pk (uint8_t type, union fields fields, size_t num_fields, const char *pk)
   return rc;
 }
 
+static int
+make_json_row (uint8_t type, union fields fields, union row row, json_t *root,
+	       bool arr, size_t num_fields, const char *pk)
+{
+  int rc = 0;
+  size_t i;
+  char *vpk;
+  json_t *jsonrow = json_object ();
+
+  if (NULL == jsonrow)
+    return SQON_MEMORYERROR;
+
+  switch (type)
+    {
+    case SQON_DBCONN_MYSQL:
+      for (i = 0; i < num_fields; ++i)
+	{
+	  if (arr || strcmp (fields.mysql[i].name, pk))
+	    rc = json_object_set_new (jsonrow, fields.mysql[i].name,
+				      json_string (row.mysql[i]));
+	  else
+	    vpk = row.mysql[i];
+
+	  if (rc)
+	    {
+	      rc = SQON_MEMORYERROR;
+	      break;
+	    }
+	}
+      break;
+
+    default:
+      rc = SQON_UNSUPPORTED;
+      break;
+    }
+
+  if (!rc)
+    {
+      if (arr)
+	json_array_append (root, jsonrow);
+      else if (NULL == json_object_get (root, vpk))
+	json_object_set (root, vpk, jsonrow);
+      else
+	rc = SQON_PKNOTUNIQUE;
+    }
+
+  json_decref (jsonrow);
+  return rc;
+}
+
 int
 res_to_json (uint8_t type, void *res, char **out, const char *pk)
 {
   int rc = 0;
   bool arr = (NULL == pk || !strcmp (pk, ""));
-  json_t *root, *jsonrow;
-  size_t num_fields, i;
-  char *vpk;
+  json_t *root;
+  size_t num_fields;
   union fields fields;
   union row row;
 
@@ -93,44 +142,7 @@ res_to_json (uint8_t type, void *res, char **out, const char *pk)
 
       while ((row.mysql = mysql_fetch_row (res)))
 	{
-	  jsonrow = json_object ();
-	  if (NULL == jsonrow)
-	    {
-	      rc = SQON_MEMORYERROR;
-	      break;
-	    }
-
-	  for (i = 0; i < num_fields; ++i)
-	    {
-	      if (arr)
-		rc = json_object_set_new (jsonrow, fields.mysql[i].name,
-					  json_string (row.mysql[i]));
-	      else if (strcmp (fields.mysql[i].name, pk))
-		rc = json_object_set_new (jsonrow, fields.mysql[i].name,
-					  json_string (row.mysql[i]));
-	      else
-		vpk = row.mysql[i];
-	      if (rc)
-		{
-		  rc = SQON_MEMORYERROR;
-		  break;
-		}
-	    }
-
-	  if (rc)
-	    {
-	      json_decref (jsonrow);
-	      break;
-	    }
-
-	  if (arr)
-	    json_array_append (root, jsonrow);
-	  else if (NULL == json_object_get (root, vpk))
-	    json_object_set (root, vpk, jsonrow);
-	  else
-	    rc = SQON_PKNOTUNIQUE;
-
-	  json_decref (jsonrow);
+	  rc = make_json_row (type, fields, row, root, arr, num_fields, pk);
 	  if (rc)
 	    break;
 	}
@@ -141,17 +153,14 @@ res_to_json (uint8_t type, void *res, char **out, const char *pk)
       break;
     }
 
-  if (rc)
+  if (!rc)
     {
-      json_decref (root);
-      return rc;
+      *out = json_dumps (root, JSON_PRESERVE_ORDER);
+      if (NULL == *out)
+	rc = SQON_MEMORYERROR;
     }
 
-  *out = json_dumps (root, JSON_PRESERVE_ORDER);
   json_decref (root);
-  if (NULL == *out)
-      rc = SQON_MEMORYERROR;
-
   return rc;
 }
 
