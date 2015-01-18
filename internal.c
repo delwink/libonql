@@ -522,7 +522,7 @@ update (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
 	case JSON_OBJECT:
 	  if (!strcmp (key, "values"))
 	    {
-	      rc = equal (srv, value, set, n);
+	      rc = equal (srv, value, set, n, c, false);
 	    }
 	  else if (!strcmp (key, "where"))
 	    {

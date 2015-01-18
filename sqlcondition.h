@@ -27,7 +27,8 @@
 #define splen 1
 
 int
-equal (sqon_dbsrv *srv, json_t *in, char *out, size_t n);
+equal (sqon_dbsrv *srv, json_t *in, char *out, size_t n, const char *sep,
+       bool space);
 
 int
 sqlcondition (sqon_dbsrv *srv, json_t *in, char *out, size_t n);

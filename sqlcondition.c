@@ -23,12 +23,13 @@
 #include "sqlcondition.h"
 
 int
-equal (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
+equal (sqon_dbsrv *srv, json_t *in, char *out, size_t n, const char *sep,
+       bool space)
 {
   json_incref (in);
   int rc = 0;
-  const char *key;
-  size_t written = 1;
+  const char *key, *buffer = space ? sp : "";
+  size_t written = 1, blen = strlen (buffer);
   json_t *value;
   char *col, *val, *temp;
 
@@ -63,6 +64,8 @@ equal (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
     }
 
   *out = '\0';
+  size_t seplen = strlen (sep);
+  size_t left = json_object_size (in);
 
   json_object_foreach (in, key, value)
     {
@@ -87,18 +90,23 @@ equal (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
       if (rc)
 	break;
 
-      if ('\0' != *out)
-	{
-	  if ((written += clen) < n)
-	    strcat (out, c);
-	  else
-	    rc = SQON_OVERFLOW;
-	}
-
-      if (rc)
-	break;
-
       strcat (out, temp);
+
+      if (--left > 0)
+	{
+	  written += (blen * 2) + seplen;
+	  if (written < n)
+	    {
+	      strcat (out, buffer);
+	      strcat (out, sep);
+	      strcat (out, buffer);
+	    }
+	  else
+	    {
+	      rc = SQON_OVERFLOW;
+	      break;
+	    }
+	}
     }
 
   sqon_free (temp);
@@ -113,7 +121,7 @@ sqlcondition (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
 {
   json_incref (in);
   int rc = 0;
-  const char *key;
+  const char *key, *sep;
   json_t *value;
   char *temp;
   size_t written = 1;
@@ -123,6 +131,23 @@ sqlcondition (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
       json_decref (in);
       return SQON_TYPEERROR;
     }
+
+  json_t *jsep = json_object_get (in, "separator");
+  if (NULL == jsep)
+    {
+      sep = "AND";
+    }
+  else
+    {
+      sep = json_string_value (jsep);
+      if (NULL == sep)
+	{
+	  json_decref (in);
+	  return SQON_TYPEERROR;
+	}
+    }
+
+  size_t seplen = strlen (sep);
 
   temp = sqon_malloc (n * sizeof (char));
   if (NULL == temp)
@@ -146,7 +171,18 @@ sqlcondition (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
 	case JSON_OBJECT:
 	  if (!strcmp (key, "equal"))
 	    {
-	      rc = equal (srv, value, temp, n);
+	      rc = equal (srv, value, temp, n, sep, true);
+	    }
+	  else
+	    {
+	      rc = SQON_UNSUPPORTED;
+	    }
+	  break;
+
+	case JSON_STRING:
+	  if (!strcmp (key, "separator"))
+	    {
+	      /* Handled above. */
 	    }
 	  else
 	    {
@@ -164,14 +200,19 @@ sqlcondition (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
 
       if (--left > 0)
 	{
-	  if ((written += clen) < n)
-	    strcat (out, c);
+	  written += (splen * 2) + seplen;
+	  if (written < n)
+	    {
+	      strcat (out, sp);
+	      strcat (out, sep);
+	      strcat (out, sp);
+	    }
 	  else
-	    rc = SQON_OVERFLOW;
+	    {
+	      rc = SQON_OVERFLOW;
+	      break;
+	    }
 	}
-
-      if (rc)
-	break;
     }
 
   sqon_free (temp);
