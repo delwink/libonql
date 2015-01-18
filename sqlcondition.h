@@ -21,7 +21,10 @@
 #include <jansson.h>
 
 #define c ","
-#define clen strlen (c)
+#define clen 1
+
+#define sp " "
+#define splen 1
 
 int
 equal (sqon_dbsrv *srv, json_t *in, char *out, size_t n);

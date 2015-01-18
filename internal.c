@@ -26,7 +26,7 @@
 #define PERM_REVOKE 2
 
 #define semi ";"
-#define slen strlen (semi)
+#define slen 1
 
 static int
 check_pk (uint8_t type, union fields fields, size_t num_fields, const char *pk)
