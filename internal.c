@@ -668,6 +668,9 @@ sqon_to_sql (sqon_dbsrv * srv, const char *in, char *out, size_t n)
       else if (!strcmp (key, "grant") || !strcmp (key, "revoke"))
 	{
 	}
+      else if (!strcmp (key, "delete"))
+	{
+	}
       else
 	{
 	  rc = SQON_UNSUPPORTED;
