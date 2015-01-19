@@ -616,48 +616,41 @@ sqon_to_sql (sqon_dbsrv * srv, const char *in, char *out, size_t n)
 
   json_object_foreach (root, key, value)
     {
+      if (!json_is_object (value))
+	{
+	  rc = SQON_TYPEERROR;
+	  break;
+	}
+
       if (!strcmp (key, "insert"))
 	{
-	  if (json_is_object (value))
+	  json_object_foreach (value, subkey, subvalue)
 	    {
-	      json_object_foreach (value, subkey, subvalue)
-		{
-		  rc = insert (srv, subkey, subvalue, temp, n);
-		  if (rc)
-		    break;
-		  rc = write_query_string (&written, temp, out, n);
-		  if (rc)
-		    break;
-		}
-
+	      rc = insert (srv, subkey, subvalue, temp, n);
+	      if (rc)
+		break;
+	      rc = write_query_string (&written, temp, out, n);
 	      if (rc)
 		break;
 	    }
-	  else
-	    {
-	      rc = SQON_TYPEERROR;
-	      break;
-	    }
+	  
+	  if (rc)
+	    break;
 	}
       else if (!strcmp (key, "update"))
 	{
-	  if (json_is_object (value))
+	  json_object_foreach (value, subkey, subvalue)
 	    {
-	      json_object_foreach (value, subkey, subvalue)
-		{
-		  rc = update (srv, subkey, subvalue, temp, n);
-		  if (rc)
-		    break;
-		  rc = write_query_string (&written, temp, out, n);
-		  if (rc)
-		    break;
-		}
+	      rc = update (srv, subkey, subvalue, temp, n);
+	      if (rc)
+		break;
+	      rc = write_query_string (&written, temp, out, n);
+	      if (rc)
+		break;
 	    }
-	  else
-	    {
-	      rc = SQON_TYPEERROR;
-	      break;
-	    }
+
+	  if (rc)
+	    break;
 	}
       else if (!strcmp (key, "select"))
 	{
