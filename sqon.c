@@ -20,7 +20,7 @@
 #include <string.h>
 
 #include "sqon.h"
-#include "internal.h"
+#include "sqlquery.h"
 
 #define empty "[]"
 #define emptylen strlen (empty)

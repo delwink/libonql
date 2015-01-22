@@ -15,8 +15,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef DELWINK_SQON_INTERNAL_H
-#define DELWINK_SQON_INTERNAL_H
+#ifndef DELWINK_SQON_SQLQUERY_H
+#define DELWINK_SQON_SQLQUERY_H
 
 #include <mysql.h>
 #include <jansson.h>

@@ -19,7 +19,7 @@
 #include <string.h>
 
 #include "sqon.h"
-#include "internal.h"
+#include "sqlquery.h"
 #include "sqlcondition.h"
 
 int
