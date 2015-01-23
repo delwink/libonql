@@ -177,6 +177,9 @@ sqon_query_sql (sqon_dbsrv * srv, const char *query, char **out,
 int
 sqon_query (sqon_dbsrv * srv, const char *query, char **out, const char *pk)
 {
+  if (0 == QLEN)
+    return SQON_OVERFLOW;
+
   char *sql = sqon_malloc (QLEN * sizeof (char));
   if (NULL == sql)
     return SQON_MEMORYERROR;
