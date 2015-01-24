@@ -333,7 +333,6 @@ sqon_to_sql (sqon_dbsrv * srv, const char *in, char *out, size_t n)
   size_t written = 1;
   const char *key, *subkey;
 /*
-    const char *SELECT = "SELECT %s %s %s";
     const char *CALL   = "CALL %s(%s)";
     const char *PERM   = "%s %s ON %s %s '%s'@'%s' %s";
 */

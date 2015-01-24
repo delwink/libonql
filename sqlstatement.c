@@ -55,7 +55,7 @@ json_to_csv (sqon_dbsrv *srv, json_t *in, char *out, size_t n, bool quote)
   left = json_array_size (in);
   json_array_foreach (in, index, value)
     {
-      json_to_sql_type(srv, value, temp, n, quote);
+      json_to_sql_type (srv, value, temp, n, quote);
       
       if (rc)
 	break;
@@ -277,6 +277,118 @@ update (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
 
   sqon_free (conditions);
   sqon_free (set);
+  json_decref (in);
+  return rc;
+}
+
+int
+select (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
+{
+  json_incref (in);
+  int rc = 0;
+  json_t *type, *table, *columns, *where;
+  char *columnlist, *conditions;
+
+  if (!json_is_object (in))
+    {
+      json_decref (in);
+      return SQON_TYPEERROR;
+    }
+
+  type = json_object_get (in, "type");
+  if (!type)
+    {
+      json_decref (in);
+      return SQON_INCOMPLETE;
+    }
+  else if (!json_is_string (type))
+    {
+      json_decref (in);
+      return SQON_TYPEERROR;
+    }
+
+  if (!strcmp (json_string_value (type), "table"))
+    {
+      table = json_object_get (in, "table");
+      if (!table)
+	{
+	  json_decref (in);
+	  return SQON_INCOMPLETE;
+	}
+      else if (!json_is_string (table))
+	{
+	  json_decref (in);
+	  return SQON_TYPEERROR;
+	}
+
+      columnlist = sqon_malloc (n * sizeof (char));
+      if (NULL == columnlist)
+	{
+	  json_decref (in);
+	  return SQON_MEMORYERROR;
+	}
+
+      columns = json_object_get (in, "columns");
+      if (!columns)
+	{
+	  rc = snprintf(columnlist, n, "*");
+	  if ((size_t) rc >= n)
+	    {
+	      sqon_free (columnlist);
+	      json_decref (in);
+	      return SQON_OVERFLOW;
+	    }
+	}
+      else
+	{
+	  rc = json_to_csv (srv, columns, columnlist, n, false);
+	  if (rc)
+	    {
+	      sqon_free (columnlist);
+	      json_decref (in);
+	      return rc;
+	    }
+	}
+
+      conditions = sqon_malloc (n * sizeof (char));
+      if (NULL == conditions)
+	{
+	  sqon_free (columnlist);
+	  json_decref (in);
+	  return SQON_MEMORYERROR;
+	}
+
+      where = json_object_get (in, "where");
+      if (!where)
+	{
+	  *conditions = '\0';
+	}
+      else
+	{
+	  rc = sqlcondition (srv, where, conditions, n);
+	  if (rc)
+	    {
+	      sqon_free (conditions);
+	      sqon_free (columnlist);
+	      json_decref (in);
+	      return rc;
+	    }
+	}
+
+      rc = snprintf (out, n, "SELECT %s FROM %s %s", columnlist,
+		     json_string_value (table), conditions);
+      sqon_free (conditions);
+      sqon_free (columnlist);
+      if ((size_t) rc >= n)
+	rc = SQON_OVERFLOW;
+      else
+	rc = 0;
+    }
+  else
+    {
+      rc = SQON_UNSUPPORTED;
+    }
+
   json_decref (in);
   return rc;
 }
