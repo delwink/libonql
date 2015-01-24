@@ -395,6 +395,12 @@ sqon_to_sql (sqon_dbsrv * srv, const char *in, char *out, size_t n)
 	}
       else if (!strcmp (key, "select"))
 	{
+	  rc = select (srv, value, temp, n);
+	  if (rc)
+	    break;
+	  rc = write_query_string (&written, temp, out, n);
+	  if (rc)
+	    break;
 	}
       else if (!strcmp (key, "call"))
 	{
