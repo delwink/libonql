@@ -186,7 +186,8 @@ sqon_close (sqon_dbsrv *srv);
  * @param query UTF-8 encoded SQL statement.
  * @param out Pointer to string which will be allocated and populated with
  * JSON-formatted response from the database; must free with sqon_free();
- * populated as object if table has a primary key, else an array.
+ * populated as object if table has a primary key, else an array; can be NULL
+ * if no result is expected.
  * @param pk Primary key expected in return value, if any (else NULL).
  * @return Negative if input or IO error; positive if error from server.
  */

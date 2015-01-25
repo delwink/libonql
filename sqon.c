@@ -149,26 +149,29 @@ sqon_query_sql (sqon_dbsrv * srv, const char *query, char **out,
       return -1;
     }
 
-  switch (srv->type)
+  if (NULL != out)
     {
-    case SQON_DBCONN_MYSQL:
-      res.mysql = mysql_store_result (srv->com);
-      if (!connected)
-	sqon_close (srv);
-      if (NULL == res.mysql)
+      switch (srv->type)
 	{
-	  rc = (int) mysql_errno (srv->com);
-	  if (rc)
-	    return rc;
-	  *out = sqon_malloc ((emptylen + 1) * sizeof (char));
-	  strcpy (*out, empty);
+	case SQON_DBCONN_MYSQL:
+	  res.mysql = mysql_store_result (srv->com);
+	  if (!connected)
+	    sqon_close (srv);
+	  if (NULL == res.mysql)
+	    {
+	      rc = (int) mysql_errno (srv->com);
+	      if (rc)
+		return rc;
+	      *out = sqon_malloc ((emptylen + 1) * sizeof (char));
+	      strcpy (*out, empty);
+	    }
+	  else
+	    {
+	      rc = res_to_json (SQON_DBCONN_MYSQL, res.mysql, out, pk);
+	    }
+	  mysql_free_result (res.mysql);
+	  break;
 	}
-      else
-	{
-	  rc = res_to_json (SQON_DBCONN_MYSQL, res.mysql, out, pk);
-	}
-      mysql_free_result (res.mysql);
-      break;
     }
 
   return rc;
