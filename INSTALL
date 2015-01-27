@@ -1,0 +1,44 @@
+Installing libsqon
+==================
+
+Before installing libsqon, one must satisfy its runtime and build dependencies.
+
+| Library            | Purpose                                    |
+|--------------------+--------------------------------------------|
+| Jansson            | JavaScript Object Notation (JSON) support. |
+| MySQL (or MariaDB) | Support for the MySQL database engine.     |
+
+Installing the Dependencies
+---------------------------
+
+On GNU/Linux, one usually installs required libraries using a package
+manager. These differ between distributions; we have below the example for
+Debian GNU/Linux and derivatives (such as Trisquel).
+
+    # apt-get install build-essential autoconf automake
+    # apt-get install libjansson-dev libmariadb-client-lgpl-dev
+
+Building libsqon
+----------------
+
+libsqon follows the GNU build process, using the autotools. Execute the
+following commands in the root directory of the source distribution.
+
+    $ ./autogen.sh
+    $ ./configure
+    $ make
+
+Installing libsqon
+------------------
+
+The most basic install can be done with GNU make.
+
+    # make install
+
+A safer installation can be done using a tool called checkinstall.
+
+    # checkinstall
+
+If using checkinstall, you may want to add `--prefix=/usr` when executing
+`./configure` to install the library to the usual directories on a GNU/Linux
+system.
