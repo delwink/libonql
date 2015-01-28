@@ -21,6 +21,8 @@ standard library. This replacement offers a far simpler API, and this provides
 an environment less prone to bugs and memory leaks on the C side, making a
 portable and stable library implementation.
 
+See [INSTALL](INSTALL) for instructions on building and installing libsqon.
+
 Hacking
 -------
 
