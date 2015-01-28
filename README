@@ -23,6 +23,19 @@ portable and stable library implementation.
 
 See [INSTALL](INSTALL) for instructions on building and installing libsqon.
 
+Practical Applications of libsqon
+---------------------------------
+
+libsqon is not only practical for using the SQON format to query a database; it
+is also a fully-capable SQL query library for all its supported database,
+allowing one to submit an SQL query and be returned a JSON string containing
+any selected data.
+
+If you're working in a language where JSON is easier to deal with as a data
+structure than that of your database connector API, you may find libsqon to be
+the perfect choice, even if you don't use SQON itself, since a single line of
+code can be valid for any supported database with just the change of an `int`.
+
 Hacking
 -------
 
