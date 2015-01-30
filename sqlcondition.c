@@ -173,6 +173,18 @@ sqlcondition (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
 	    {
 	      rc = equal (srv, value, temp, n, sep, true);
 	    }
+	  else if (!strcmp (key, "in"))
+	    {
+	    }
+	  else if (!strcmp (key, "like"))
+	    {
+	    }
+	  else if (!strcmp (key, "regexp"))
+	    {
+	    }
+	  else if (!strcmp (key, "between"))
+	    {
+	    }
 	  else
 	    {
 	      rc = SQON_UNSUPPORTED;
