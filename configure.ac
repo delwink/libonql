@@ -10,6 +10,10 @@ AM_SILENT_RULES([yes])
 AM_PROG_AR
 LT_INIT
 AC_PROG_CC
+
+PKG_CHECK_MODULES([jansson], [jansson])
+MYSQL_LIBS=`mysql_config --libs`
+
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([
  Makefile

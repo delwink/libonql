@@ -29,7 +29,7 @@ build-aux/
 autom4te.cache
 .deps
 .libs
-m4/l*
+m4/
 libtool
 src/.dirstamp
 Makefile

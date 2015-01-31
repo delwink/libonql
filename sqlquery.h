@@ -18,7 +18,7 @@
 #ifndef DELWINK_SQON_SQLQUERY_H
 #define DELWINK_SQON_SQLQUERY_H
 
-#include <mysql.h>
+#include <mysql/mysql.h>
 #include <jansson.h>
 
 #include "sqon.h"
