@@ -80,15 +80,13 @@ equal (sqon_dbsrv *srv, json_t *in, char *out, size_t n, const char *sep,
       if ((size_t) rc >= n)
 	{
 	  rc = SQON_OVERFLOW;
+	  break;
 	}
       else
 	{
 	  written += rc;
 	  rc = 0;
 	}
-
-      if (rc)
-	break;
 
       strcat (out, temp);
 
@@ -112,6 +110,98 @@ equal (sqon_dbsrv *srv, json_t *in, char *out, size_t n, const char *sep,
   sqon_free (temp);
   sqon_free (col);
   sqon_free (val);
+  json_decref (in);
+  return rc;
+}
+
+static int
+in_cond (sqon_dbsrv *srv, json_t *in, char *out, size_t n, const char *sep,
+	 bool space)
+{
+  json_incref (in);
+  int rc = 0;
+  const char *key, *buffer = space ? sp : "";
+  size_t written = 1, blen = strlen (buffer);
+  json_t *value;
+  char *col, *vals, *temp;
+
+  if (!json_is_object (in))
+    {
+      json_decref (in);
+      return SQON_TYPEERROR;
+    }
+
+  col = sqon_malloc (n * sizeof (char));
+  if (NULL == col)
+    {
+      json_decref (in);
+      return SQON_MEMORYERROR;
+    }
+
+  vals = sqon_malloc (n * sizeof (char));
+  if (NULL == vals)
+    {
+      sqon_free (col);
+      json_decref (in);
+      return SQON_MEMORYERROR;
+    }
+
+  temp = sqon_malloc (n * sizeof (char));
+  if (NULL == temp)
+    {
+      sqon_free (vals);
+      sqon_free (col);
+      json_decref (in);
+      return SQON_MEMORYERROR;
+    }
+
+  *out = '\0';
+  size_t seplen = strlen (sep);
+  size_t left = json_object_size (in);
+
+  json_object_foreach (in, key, value)
+    {
+      rc = escape (srv, key, col, n, false);
+      if (rc)
+	break;
+      rc = json_to_csv (srv, value, vals, n, true);
+      if (rc)
+	break;
+
+      rc = snprintf (temp, n, "%s IN (%s)", col, vals);
+      if ((size_t) rc >= n)
+	{
+	  rc = SQON_OVERFLOW;
+	  break;
+	}
+      else
+	{
+	  written += rc;
+	  rc = 0;
+	}
+
+      strcat (out, temp);
+
+      if (--left > 0)
+	{
+	  written += (blen * 2) + seplen;
+	  if (written < n)
+	    {
+	      strcat (out, buffer);
+	      strcat (out, sep);
+	      strcat (out, buffer);
+	    }
+	  else
+	    {
+	      rc = SQON_OVERFLOW;
+	      break;
+	    }
+	}
+    }
+
+  sqon_free (vals);
+  sqon_free (col);
+  sqon_free (temp);
   json_decref (in);
   return rc;
 }
@@ -175,6 +265,7 @@ sqlcondition (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
 	    }
 	  else if (!strcmp (key, "in"))
 	    {
+	      rc = in_cond (srv, value, temp, n, sep, true);
 	    }
 	  else if (!strcmp (key, "like"))
 	    {

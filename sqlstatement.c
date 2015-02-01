@@ -23,67 +23,6 @@
 #include "sqlcondition.h"
 
 static int
-json_to_csv (sqon_dbsrv *srv, json_t *in, char *out, size_t n, bool quote)
-{
-  json_incref (in);
-  int rc = 0;
-  json_t *value;
-  size_t index, written = 1, left;
-  char *temp;
-
-  if (written >= n)
-    {
-      json_decref (in);
-      return SQON_OVERFLOW;
-    }
-
-  if (!json_is_array (in))
-    {
-      json_decref (in);
-      return SQON_TYPEERROR;
-    }
-
-  temp = sqon_malloc (n * sizeof (char));
-  if (NULL == temp)
-    {
-      json_decref (in);
-      return SQON_MEMORYERROR;
-    }
-
-  *out = '\0';
-
-  left = json_array_size (in);
-  json_array_foreach (in, index, value)
-    {
-      json_to_sql_type (srv, value, temp, n, quote);
-      
-      if (rc)
-	break;
-      
-      written += strlen (temp);
-      
-      if (--left > 0)
-	{
-	  if ((written += clen) < n)
-	    {
-	      strcat (temp, c);
-	    }
-	  else
-	    {
-	      rc = SQON_OVERFLOW;
-	      break;
-	    }
-	}
-      
-      strcat (out, temp);
-    }
-  
-  sqon_free (temp);
-  json_decref (in);
-  return rc;
-}
-
-static int
 insert_cols_vals (sqon_dbsrv *srv, json_t *in, char *columns, char *values,
 		  size_t n)
 {

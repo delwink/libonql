@@ -39,6 +39,9 @@ union row
 };
 
 int
+json_to_csv (sqon_dbsrv *srv, json_t *in, char *out, size_t n, bool quote);
+
+int
 res_to_json (uint8_t type, void *res, char **out, const char *pk);
 
 int
