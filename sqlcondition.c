@@ -269,12 +269,15 @@ sqlcondition (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
 	    }
 	  else if (!strcmp (key, "like"))
 	    {
+	      rc = SQON_UNSUPPORTED;
 	    }
 	  else if (!strcmp (key, "regexp"))
 	    {
+	      rc = SQON_UNSUPPORTED;
 	    }
 	  else if (!strcmp (key, "between"))
 	    {
+	      rc = SQON_UNSUPPORTED;
 	    }
 	  else
 	    {
