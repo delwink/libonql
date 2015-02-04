@@ -206,6 +206,101 @@ in_cond (sqon_dbsrv *srv, json_t *in, char *out, size_t n, const char *sep,
   return rc;
 }
 
+static int
+like (sqon_dbsrv *srv, json_t *in, char *out, size_t n, const char *sep,
+      bool space)
+{
+  json_incref (in);
+  int rc = 0;
+  const char *key, *buffer = space ? sp : "";
+  size_t written = 1, blen = strlen (buffer);
+  json_t *value;
+  char *col, *val, *temp;
+
+  if (!json_is_object (in))
+    {
+      json_decref (in);
+      return SQON_TYPEERROR;
+    }
+
+  col = sqon_malloc (n * sizeof (char));
+  if (NULL == col)
+    {
+      json_decref (in);
+      return SQON_MEMORYERROR;
+    }
+
+  val = sqon_malloc (n * sizeof (char));
+  if (NULL == val)
+    {
+      sqon_free (col);
+      json_decref (in);
+      return SQON_MEMORYERROR;
+    }
+
+  temp = sqon_malloc (n * sizeof (char));
+  if (NULL == temp)
+    {
+      sqon_free (val);
+      sqon_free (col);
+      json_decref (in);
+      return SQON_MEMORYERROR;
+    }
+
+  *out = '\0';
+  size_t seplen = strlen (sep);
+  size_t left = json_object_size (in);
+
+  json_object_foreach (in, key, value)
+    {
+      if (!json_is_string (value))
+	{
+	  rc = SQON_TYPEERROR;
+	  break;
+	}
+
+      rc = escape (srv, key, col, n, false);
+      if (rc)
+	break;
+
+      rc = snprintf (temp, n, "%s LIKE %s", col, json_string_value (value));
+      if ((size_t) rc >= n)
+	{
+	  rc = SQON_OVERFLOW;
+	  break;
+	}
+      else
+	{
+	  written += rc;
+	  rc = 0;
+	}
+
+      strcat (out, temp);
+
+      if (--left > 0)
+	{
+	  written += (blen * 2) + seplen;
+	  if (written < n)
+	    {
+	      strcat (out, buffer);
+	      strcat (out, sep);
+	      strcat (out, buffer);
+	    }
+	  else
+	    {
+	      rc = SQON_OVERFLOW;
+	      break;
+	    }
+	}
+    }
+
+  sqon_free (temp);
+  sqon_free (val);
+  sqon_free (col);
+  json_decref (in);
+  return rc;
+}
+
 int
 sqlcondition (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
 {
@@ -269,7 +364,7 @@ sqlcondition (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
 	    }
 	  else if (!strcmp (key, "like"))
 	    {
-	      rc = SQON_UNSUPPORTED;
+	      rc = like (srv, value, temp, n, sep, true);
 	    }
 	  else if (!strcmp (key, "regexp"))
 	    {
