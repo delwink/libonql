@@ -111,7 +111,16 @@ abstract_condition (sqon_dbsrv *srv, json_t *in, char *out, size_t n,
 	  break;
 
 	case VALUE_CSV:
-	  rc = json_to_csv (srv, value, val, n, true);
+	  rc = json_to_csv (srv, value, temp, n, true);
+	  if (rc)
+	    break;
+
+	  rc = snprintf (val, n, "(%s)", temp);
+
+	  if ((size_t) rc >= n)
+	    rc = SQON_OVERFLOW;
+	  else
+	    rc = 0;
 	  break;
 
 	default:
