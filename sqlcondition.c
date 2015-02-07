@@ -159,6 +159,14 @@ like (sqon_dbsrv *srv, json_t *in, char *out, size_t n, const char *sep,
 			     VALUE_UNIT);
 }
 
+static int
+regexp (sqon_dbsrv *srv, json_t *in, char *out, size_t n, const char *sep,
+	bool space)
+{
+  return abstract_condition (srv, in, out, n, sep, space, " REGEXP ",
+			     VALUE_UNIT);
+}
+
 int
 sqlcondition (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
 {
@@ -226,7 +234,7 @@ sqlcondition (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
 	    }
 	  else if (!strcmp (key, "regexp"))
 	    {
-	      rc = SQON_UNSUPPORTED;
+	      rc = regexp (srv, value, temp, n, sep, true);
 	    }
 	  else if (!strcmp (key, "between"))
 	    {
