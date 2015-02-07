@@ -5,10 +5,10 @@ dist_pkgconfig_DATA = sqon.pc
 
 include_HEADERS = sqon.h
 lib_LTLIBRARIES = libsqon.la
-libsqon_la_LDFLAGS = -version-info 0:0:0
+libsqon_la_LDFLAGS = -version-info 0:0:0 `mysql_config --libs`
 libsqon_la_SOURCES = sqon.c sqlquery.c sqlcondition.c sqlstatement.c
 libsqon_la_CFLAGS = -Wall -Wextra -Wunreachable-code -ftrapv -std=c11
-libsqon_la_LIBADD = $(MYSQL_LIBS) $(jansson_LIBS)
+libsqon_la_LIBADD = $(jansson_LIBS)
 
 AM_CFLAGS = $(DEPS_CFLAGS)
 AM_LIBS = $(DEPS_LIBS)
