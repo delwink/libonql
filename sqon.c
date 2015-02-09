@@ -16,7 +16,7 @@
  */
 
 #include <jansson.h>
-#include <mysql/mysql.h>
+#include <mysql.h>
 #include <string.h>
 
 #include "sqon.h"
