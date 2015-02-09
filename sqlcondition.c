@@ -123,6 +123,55 @@ abstract_condition (sqon_dbsrv *srv, json_t *in, char *out, size_t n,
 	    rc = 0;
 	  break;
 
+	case VALUE_BETWEEN:
+	  if (!json_is_array (value))
+	    {
+	      rc = SQON_TYPEERROR;
+	      break;
+	    }
+
+	  char *low = sqon_malloc (n * sizeof (char));
+	  if (NULL == low)
+	    {
+	      rc = SQON_MEMORYERROR;
+	      break;
+	    }
+
+	  char *high = sqon_malloc (n * sizeof (char));
+	  if (NULL == high)
+	    {
+	      sqon_free (low);
+	      rc = SQON_MEMORYERROR;
+	      break;
+	    }
+
+	  rc = json_to_sql_type (srv, json_array_get (value, 0), low, n, true);
+	  if (rc)
+	    {
+	      sqon_free (high);
+	      sqon_free (low);
+	      break;
+	    }
+
+	  rc = json_to_sql_type (srv, json_array_get (value, 1), high, n,
+				 true);
+	  if (rc)
+	    {
+	      sqon_free (high);
+	      sqon_free (low);
+	      break;
+	    }
+
+	  rc = snprintf (val, n, "%s AND %s", low, high);
+	  sqon_free (high);
+	  sqon_free (low);
+
+	  if ((size_t) rc >= n)
+	    rc = SQON_OVERFLOW;
+	  else
+	    rc = 0;
+	  break;
+
 	default:
 	  rc = SQON_UNSUPPORTED;
 	  break;
@@ -181,7 +230,7 @@ between (sqon_dbsrv *srv, json_t *in, char *out, size_t n, const char *sep,
 	 bool space)
 {
   return abstract_condition (srv, in, out, n, sep, space, " BETWEEN ",
-			     VALUE_CSV);
+			     VALUE_BETWEEN);
 }
 
 int
