@@ -176,6 +176,14 @@ regexp (sqon_dbsrv *srv, json_t *in, char *out, size_t n, const char *sep,
 			     VALUE_UNIT);
 }
 
+static int
+between (sqon_dbsrv *srv, json_t *in, char *out, size_t n, const char *sep,
+	 bool space)
+{
+  return abstract_condition (srv, in, out, n, sep, space, " BETWEEN ",
+			     VALUE_CSV);
+}
+
 int
 sqlcondition (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
 {
@@ -247,7 +255,7 @@ sqlcondition (sqon_dbsrv *srv, json_t *in, char *out, size_t n)
 	    }
 	  else if (!strcmp (key, "between"))
 	    {
-	      rc = SQON_UNSUPPORTED;
+	      rc = between (srv, value, temp, n, sep, true);
 	    }
 	  else
 	    {
