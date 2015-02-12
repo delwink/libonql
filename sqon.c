@@ -20,7 +20,7 @@
 #include <string.h>
 
 #include "sqon.h"
-#include "sqlquery.h"
+#include "result.h"
 
 #define empty "[]"
 #define emptylen strlen (empty)
@@ -119,8 +119,7 @@ sqon_close (sqon_dbsrv * srv)
 }
 
 int
-sqon_query_sql (sqon_dbsrv * srv, const char *query, char **out,
-		const char *pk)
+sqon_query (sqon_dbsrv * srv, const char *query, char **out, const char *pk)
 {
   int rc = 0;
   bool connected = srv->isopen;
@@ -174,23 +173,6 @@ sqon_query_sql (sqon_dbsrv * srv, const char *query, char **out,
 	}
     }
 
-  return rc;
-}
-
-int
-sqon_query (sqon_dbsrv * srv, const char *query, char **out, const char *pk)
-{
-  if (0 == QLEN)
-    return SQON_OVERFLOW;
-
-  char *sql = sqon_malloc (QLEN * sizeof (char));
-  if (NULL == sql)
-    return SQON_MEMORYERROR;
-
-  int rc = sqon_to_sql (srv, query, sql, QLEN);
-  if (!rc)
-    rc = sqon_query_sql (srv, sql, out, pk);
-  sqon_free (sql);
   return rc;
 }
 
@@ -275,4 +257,65 @@ sqon_get_pk (sqon_dbsrv * srv, const char *table, char **out)
     }
 
   return 0;
+}
+
+int
+sqon_escape (sqon_dbsrv *srv, const char *in, char *out, size_t n, bool quote)
+{
+  int rc = 0;
+  bool connected = srv->isopen;
+  size_t extra = 1 + quote ? 2 : 0;
+  char *temp = sqon_malloc ((strlen (in) * 2 + extra) * sizeof (char));
+  if (NULL == temp)
+    return SQON_MEMORYERROR;
+
+  if (!connected)
+    {
+      rc = sqon_connect (srv);
+      if (rc)
+	{
+	  sqon_free (temp);
+	  return SQON_CONNECTERR;
+	}
+    }
+
+  union
+  {
+    unsigned long ul;
+  } written;
+
+  switch (srv->type)
+    {
+    case SQON_DBCONN_MYSQL:
+      written.ul = mysql_real_escape_string (srv->com, temp, in, strlen (in));
+      if (written.ul >= n)
+	{
+	  rc = SQON_OVERFLOW;
+	  break;
+	}
+
+      if (quote)
+	{
+	  rc = snprintf (out, n, "'%s'", temp);
+	  if ((size_t) rc >= n)
+	    rc = SQON_OVERFLOW;
+	  else
+	    rc = 0;
+	}
+      else
+	{
+	  strcpy (out, temp);
+	}
+      break;
+
+    default:
+      rc = SQON_UNSUPPORTED;
+      break;
+    }
+
+  if (!connected)
+    sqon_close (srv);
+
+  sqon_free (temp);
+  return rc;
 }

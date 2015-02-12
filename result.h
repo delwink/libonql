@@ -15,21 +15,30 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef DELWINK_SQON_SQLQUERY_H
+#define DELWINK_SQON_SQLQUERY_H
+
+#include <mysql/mysql.h>
+#include <jansson.h>
+
 #include "sqon.h"
 
-#ifndef DELWINK_SQON_SQLSTATEMENT_H
-#define DELWINK_SQON_SQLSTATEMENT_H
+union res
+{
+  MYSQL_RES *mysql;
+};
+
+union fields
+{
+  MYSQL_FIELD *mysql;
+};
+
+union row
+{
+  MYSQL_ROW mysql;
+};
 
 int
-insert (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n);
-
-int
-update (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n);
-
-int
-delete (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n);
-
-int
-select (sqon_dbsrv *srv, json_t *in, char *out, size_t n);
+res_to_json (uint8_t type, void *res, char **out, const char *pk);
 
 #endif

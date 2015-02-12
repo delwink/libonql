@@ -3,10 +3,7 @@ libsqon
 
 SQON - Structured Query Object Notation (Delwink C Implementation)
 
-Query SQL databases with a JSON API. Current target: MySQL.
-
-This is Delwink's C implementation of SQON. For the format itself, see
-[Delwink's website][3].
+Query SQL databases and get JSON results. Current target: MySQL.
 
 Why SQON?
 ---------
@@ -26,15 +23,14 @@ See [INSTALL](INSTALL) for instructions on building and installing libsqon.
 Practical Applications of libsqon
 ---------------------------------
 
-libsqon is not only practical for using the SQON format to query a database; it
-is also a fully-capable SQL query library for all its supported database,
+libsqon is a fully-capable SQL query library for all its supported databases,
 allowing one to submit an SQL query and be returned a JSON string containing
 any selected data.
 
 If you're working in a language where JSON is easier to deal with as a data
 structure than that of your database connector API, you may find libsqon to be
-the perfect choice, even if you don't use SQON itself, since a single line of
-code can be valid for any supported database with just the change of an `int`.
+the perfect choice, since a single line of code can be valid for any supported
+database with just the change of an `int`.
 
 Hacking
 -------
@@ -56,4 +52,3 @@ this software and use it for whatever purpose.
 
 [1]: http://delwink.com/software/cquel.html
 [2]: mailto:contribute@delwink.com
-[3]: http://delwink.com/software/sqon.html

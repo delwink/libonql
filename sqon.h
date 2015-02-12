@@ -181,7 +181,7 @@ void
 sqon_close (sqon_dbsrv *srv);
 
 /**
- * @brief Query the database (SQL).
+ * @brief Query the database.
  * @param srv Initialized database connection object.
  * @param query UTF-8 encoded SQL statement.
  * @param out Pointer to string which will be allocated and populated with
@@ -190,18 +190,6 @@ sqon_close (sqon_dbsrv *srv);
  * if no result is expected.
  * @param pk Primary key expected in return value, if any (else NULL).
  * @return Negative if input or IO error; positive if error from server.
- */
-int
-sqon_query_sql (sqon_dbsrv *srv, const char *query, char **out,
-		const char *pk);
-
-/**
- * @brief Query the database (SQON).
- * @param srv Initialized database connection object.
- * @param query UTF-8 encoded SQON object with query instructions.
- * @param out See sqon_query_sql().
- * @param pk See sqon_query_sql().
- * @return See sqon_query_sql().
  */
 int
 sqon_query (sqon_dbsrv *srv, const char *query, char **out, const char *pk);
@@ -216,6 +204,18 @@ sqon_query (sqon_dbsrv *srv, const char *query, char **out, const char *pk);
  */
 int
 sqon_get_pk (sqon_dbsrv *srv, const char *table, char **out);
+
+/**
+ * @brief Properly escapes a string for the database engine.
+ * @param srv Initialized database connection object.
+ * @param in String to be escaped.
+ * @param out Output buffer for the escaped string.
+ * @param n Size of the output buffer.
+ * @param quote Whether to surround the output string in apostrophes.
+ * @return Nonzero on error.
+ */
+int
+sqon_escape (sqon_dbsrv *srv, const char *in, char *out, size_t n, bool quote);
 
 #ifdef __cplusplus
 }
