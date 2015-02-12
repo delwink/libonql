@@ -149,40 +149,27 @@ insert (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
 int
 update (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
 {
-  json_incref (in);
   int rc = 0;
   const char *fmt = "UPDATE %s SET %s %s";
   json_t *value;
   char *key, *set, *conditions;
 
   if (!json_is_object (in))
-    {
-      json_decref (in);
-      return SQON_TYPEERROR;
-    }
+    return SQON_TYPEERROR;
 
   if (!(strlen (table) > 0))
-    {
-      json_decref (in);
-      return SQON_INCOMPLETE;
-    }
+    return SQON_INCOMPLETE;
 
   set = sqon_malloc (n * sizeof (char));
   if (NULL == set)
-    {
-      json_decref (in);
-      return SQON_MEMORYERROR;
-    }
+    return SQON_MEMORYERROR;
 
   conditions = sqon_malloc (n * sizeof (char));
   if (NULL == conditions)
     {
-      json_decref (in);
       sqon_free (set);
       return SQON_MEMORYERROR;
     }
-
-  conditions[0] = '\0';
 
   json_object_foreach (in, key, value)
     {
@@ -204,19 +191,58 @@ update (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
 	  break;
 
 	default:
-	  rc = SQON_UNSUPPORTED;
+	  rc = SQON_TYPEERROR;
 	  break;
 	}
     }
 
   if (!rc && (size_t) snprintf (out, n, fmt, table, set, conditions) >= n)
-    {
-      rc = SQON_OVERFLOW;
-    }
+    rc = SQON_OVERFLOW;
 
   sqon_free (conditions);
   sqon_free (set);
-  json_decref (in);
+  return rc;
+}
+
+int
+delete (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n)
+{
+  int rc = 0;
+  const char *fmt = "DELETE FROM %s %s";
+  json_t *value;
+  char *key, *conditions;
+
+  if (!json_is_object (in))
+    return SQON_TYPEERROR;
+
+  if (!(strlen (table) > 0))
+    return SQON_INCOMPLETE;
+
+  conditions = sqon_malloc (n * sizeof (char));
+  if (NULL == conditions)
+    return SQON_MEMORYERROR;
+
+  json_object_foreach (in, key, value)
+    {
+      if (!json_is_object (value))
+	{
+	  rc = SQON_TYPEERROR;
+	  break;
+	}
+
+      if (!strcmp (key, "where"))
+	rc = sqlcondition (srv, value, conditions, n);
+      else
+	rc = SQON_UNSUPPORTED;
+
+      if (rc)
+	break;
+    }
+
+  if (!rc && (size_t) snprintf (out, n, fmt, table, conditions) >= n)
+    rc = SQON_OVERFLOW;
+
+  sqon_free (conditions);
   return rc;
 }
 

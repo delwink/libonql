@@ -454,6 +454,21 @@ sqon_to_sql (sqon_dbsrv * srv, const char *in, char *out, size_t n)
 	  if (rc)
 	    break;
 	}
+      else if (!strcmp (key, "delete"))
+	{
+	  json_object_foreach (value, subkey, subvalue)
+	    {
+	      rc = delete (srv, subkey, subvalue, temp, n);
+	      if (rc)
+		break;
+	      rc = write_query_string (&written, temp, out, n);
+	      if (rc)
+		break;
+	    }
+
+	  if (rc)
+	    break;
+	}
       else if (!strcmp (key, "select"))
 	{
 	  rc = select (srv, value, temp, n);
@@ -463,17 +478,25 @@ sqon_to_sql (sqon_dbsrv * srv, const char *in, char *out, size_t n)
 	  if (rc)
 	    break;
 	}
-      else if (!strcmp (key, "call"))
-	{
-	}
-      else if (!strcmp (key, "grant") || !strcmp (key, "revoke"))
-	{
-	}
-      else if (!strcmp (key, "delete"))
-	{
-	}
       else if (!strcmp (key, "show"))
 	{
+	  rc = SQON_UNSUPPORTED;
+	  break;
+	}
+      else if (!strcmp (key, "call"))
+	{
+	  rc = SQON_UNSUPPORTED;
+	  break;
+	}
+      else if (!strcmp (key, "grant"))
+	{
+	  rc = SQON_UNSUPPORTED;
+	  break;
+	}
+      else if (!strcmp (key, "revoke"))
+	{
+	  rc = SQON_UNSUPPORTED;
+	  break;
 	}
       else
 	{

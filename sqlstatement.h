@@ -27,6 +27,9 @@ int
 update (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n);
 
 int
+delete (sqon_dbsrv *srv, const char *table, json_t *in, char *out, size_t n);
+
+int
 select (sqon_dbsrv *srv, json_t *in, char *out, size_t n);
 
 #endif
