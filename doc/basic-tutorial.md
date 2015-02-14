@@ -114,8 +114,8 @@ if (rc)
 ```
 
 Finally, we call the database. The parameters are the address of your database
-connection object, the SQL query, the output buffer (could be NULL if, say, we
-were inserting or updating data which does not return anything from the
+connection object, the SQL query, the output buffer (could be `NULL` if, say,
+we were inserting or updating data which does not return anything from the
 database), and a string representation of the return value's "primary key". I
 use quotes, because this doesn't have to be the actual primary key of the
 table. If the primary key value matches a column in the return value, the
