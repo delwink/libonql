@@ -39,7 +39,7 @@ main (int argc, char *argv[])
       return rc;
     }
 
-  printf ("%s\n", output);
+  puts (output);
   sqon_free (output);
 
   return 0;
@@ -131,7 +131,7 @@ process, prints the error code to the screen, and exits the program with an
 error code.
 
 ``` c
-printf ("%s\n", output);
+puts (output);
 sqon_free (output);
 
 return 0;
