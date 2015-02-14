@@ -71,7 +71,7 @@ main (int argc, char *argv[])
 This is the typical declaration of the `main ()` entry point into our
 program. Although our program does not take arguments from the command line, it
 may need to in the future, and it doesn't hurt to declare the standard `(int,
-char *)` parameters.
+char **)` parameters.
 
 ``` c
 int rc = 0;
