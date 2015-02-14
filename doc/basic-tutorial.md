@@ -32,15 +32,15 @@ main (int argc, char *argv[])
   mydb = sqon_new_connection (SQON_DBCONN_MYSQL, "localhost",
 			      "myuser", "mypasswd", "mydb");
 
-  rc = sqon_query (&mydb, "SELECT * FROM MyTable", &out, NULL);
+  rc = sqon_query (&mydb, "SELECT * FROM MyTable", &output, NULL);
   if (rc)
     {
       fprintf (stderr, "Error %d\n", rc);
       return rc;
     }
 
-  printf ("%s\n", out);
-  sqon_free (out);
+  printf ("%s\n", output);
+  sqon_free (output);
 
   return 0;
 }
@@ -105,7 +105,7 @@ fields are optional based on context, but only the database is optional for
 MySQL.
 
 ``` c
-rc = sqon_query (&mydb, "SELECT * FROM MyTable", &out, NULL);
+rc = sqon_query (&mydb, "SELECT * FROM MyTable", &output, NULL);
 if (rc)
   {
     fprintf (stderr, "Error %d\n", rc);
@@ -131,8 +131,8 @@ process, prints the error code to the screen, and exits the program with an
 error code.
 
 ``` c
-printf ("%s\n", out);
-sqon_free (out);
+printf ("%s\n", output);
+sqon_free (output);
 
 return 0;
 ```
