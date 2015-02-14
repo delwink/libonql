@@ -25,8 +25,6 @@
 #define empty "[]"
 #define emptylen strlen (empty)
 
-size_t QLEN = 0;
-
 static void *
 safe_memset (void *v, int c, size_t n)
 {
@@ -63,9 +61,8 @@ sqon_free (void *v)
 }
 
 void
-sqon_init (size_t qlen)
+sqon_init (void)
 {
-  QLEN = qlen;
   json_set_alloc_funcs (sqon_malloc, sqon_free);
 }
 
@@ -182,6 +179,7 @@ sqon_get_pk (sqon_dbsrv * srv, const char *table, char **out)
   int rc;
   bool connected = srv->isopen;
   char *query;
+  size_t qlen = 1;
   const char *fmt;
   union res res;
   union row row;
@@ -196,12 +194,15 @@ sqon_get_pk (sqon_dbsrv * srv, const char *table, char **out)
       return -1;
     }
 
-  query = sqon_malloc (QLEN * sizeof (char));
+  qlen += strlen (fmt);
+  qlen += strlen (table);
+
+  query = sqon_malloc (qlen * sizeof (char));
   if (NULL == query)
     return SQON_MEMORYERROR;
 
-  rc = snprintf (query, QLEN, fmt, table);
-  if ((size_t) rc >= QLEN)
+  rc = snprintf (query, qlen, fmt, table);
+  if ((size_t) rc >= qlen)
     {
       sqon_free (query);
       return SQON_OVERFLOW;

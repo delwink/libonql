@@ -18,7 +18,7 @@
 /**
  * @file sqon.h
  * @version 0.0
- * @date 02/12/2015
+ * @date 02/14/2015
  * @author David McMackins II
  * @brief C implementation for Delwink's SQON
  */
@@ -52,16 +52,6 @@
 "along with this program.  If not, see <http://www.gnu.org/licenses/>."
 
 /**
- * @brief Error loading SQON string.
- */
-#define SQON_LOADERROR   -10
-
-/**
- * @brief Unexpected JSON type while parsing.
- */
-#define SQON_TYPEERROR   -11
-
-/**
  * @brief Error allocating memory.
  */
 #define SQON_MEMORYERROR -12
@@ -77,11 +67,6 @@
 #define SQON_UNSUPPORTED -14
 
 /**
- * @brief Input shorter than expected.
- */
-#define SQON_INCOMPLETE  -15
-
-/**
  * @brief Error connecting to database server.
  */
 #define SQON_CONNECTERR  -20
@@ -90,11 +75,6 @@
  * @brief Expecting return columns, but found none.
  */
 #define SQON_NOCOLUMNS   -21
-
-/**
- * @brief Database server returned NULL column.
- */
-#define SQON_NULLCOLUMN  -22
 
 /**
  * @brief Specified primary key was not returned.
@@ -128,10 +108,9 @@ sqon_free (void *v);
 
 /**
  * @brief Initializes SQON and supporting libraries.
- * @param qlen Maximum length for queries to the database.
  */
 void
-sqon_init (size_t qlen);
+sqon_init (void);
 
 /**
  * @brief The universal database connection auxiliary structure for libsqon.
