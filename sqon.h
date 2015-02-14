@@ -18,7 +18,7 @@
 /**
  * @file sqon.h
  * @version 0.0
- * @date 01/07/2014
+ * @date 02/12/2015
  * @author David McMackins II
  * @brief C implementation for Delwink's SQON
  */
