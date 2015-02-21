@@ -83,7 +83,7 @@ sqon_new_connection (uint8_t type, const char *host,
 }
 
 int
-sqon_connect (sqon_dbsrv * srv)
+sqon_connect (sqon_dbsrv *srv)
 {
   switch (srv->type)
     {
@@ -104,7 +104,7 @@ sqon_connect (sqon_dbsrv * srv)
 }
 
 void
-sqon_close (sqon_dbsrv * srv)
+sqon_close (sqon_dbsrv *srv)
 {
   switch (srv->type)
     {
@@ -116,7 +116,7 @@ sqon_close (sqon_dbsrv * srv)
 }
 
 int
-sqon_query (sqon_dbsrv * srv, const char *query, char **out, const char *pk)
+sqon_query (sqon_dbsrv *srv, const char *query, char **out, const char *pk)
 {
   int rc = 0;
   bool connected = srv->isopen;
@@ -174,7 +174,7 @@ sqon_query (sqon_dbsrv * srv, const char *query, char **out, const char *pk)
 }
 
 int
-sqon_get_pk (sqon_dbsrv * srv, const char *table, char **out)
+sqon_get_pk (sqon_dbsrv *srv, const char *table, char **out)
 {
   int rc;
   bool connected = srv->isopen;
