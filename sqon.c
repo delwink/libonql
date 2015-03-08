@@ -142,7 +142,7 @@ sqon_query (sqon_dbsrv *srv, const char *query, char **out, const char *pk)
       break;
 
     default:
-      return -1;
+      return SQON_UNSUPPORTED;
     }
 
   if (NULL != out)
@@ -191,7 +191,7 @@ sqon_get_pk (sqon_dbsrv *srv, const char *table, char **out)
       break;
 
     default:
-      return -1;
+      return SQON_UNSUPPORTED;
     }
 
   qlen += strlen (fmt);
