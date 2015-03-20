@@ -134,12 +134,13 @@ sqon_query (sqon_dbsrv *srv, const char *query, char **out, const char *pk)
     {
     case SQON_DBCONN_MYSQL:
       if (mysql_query (srv->com, query))
-	{
-	  rc = mysql_errno (srv->com);
-	  if (!connected)
-	    sqon_close (srv);
-	  return rc;
-	}
+	rc = mysql_errno (srv->com);
+
+      if (!connected)
+	sqon_close (srv);
+
+      if (rc)
+	return rc;
       break;
 
     default:
