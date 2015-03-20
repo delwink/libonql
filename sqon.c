@@ -110,6 +110,7 @@ sqon_close (sqon_dbsrv *srv)
     {
     case SQON_DBCONN_MYSQL:
       mysql_close (srv->com);
+      mysql_library_end ();
       srv->isopen = false;
       break;
     }
