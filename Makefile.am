@@ -7,7 +7,7 @@ include_HEADERS = sqon.h
 lib_LTLIBRARIES = libsqon.la
 libsqon_la_SOURCES = sqon.c result.c
 
-libsqon_la_LDFLAGS = -version-info 0:2:0 `mysql_config --libs`
+libsqon_la_LDFLAGS = -version-info 0:3:0 `mysql_config --libs`
 
 libsqon_la_CFLAGS = -Wall -Wextra -Wunreachable-code -ftrapv -std=c11
 

@@ -1,5 +1,5 @@
 AC_PREREQ([2.60])
-AC_INIT([libsqon],[0.0.2],[support@delwink.com])
+AC_INIT([libsqon],[0.0.3],[support@delwink.com])
 
 AC_CONFIG_SRCDIR([sqon.c])
 AC_CONFIG_AUX_DIR([build-aux])
