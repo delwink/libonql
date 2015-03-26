@@ -33,7 +33,7 @@
 /**
  * @brief libsqon software version
  */
-#define SQON_VERSION "0.0.3"
+#define SQON_VERSION "0.0.4"
 
 /**
  * @brief Information about the libsqon copyright holders and license.
