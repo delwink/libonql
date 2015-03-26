@@ -47,6 +47,12 @@ check_pk (uint8_t type, union fields fields, size_t num_fields, const char *pk)
   return rc;
 }
 
+static json_t *
+row_string (const char *str)
+{
+  return NULL == str ? json_null () : json_string (str);
+}
+
 static int
 make_json_row (uint8_t type, union fields fields, union row row, json_t *root,
 	       bool arr, size_t num_fields, const char *pk)
@@ -66,7 +72,7 @@ make_json_row (uint8_t type, union fields fields, union row row, json_t *root,
 	{
 	  if (arr || strcmp (fields.mysql[i].name, pk))
 	    rc = json_object_set_new (jsonrow, fields.mysql[i].name,
-				      json_string (row.mysql[i]));
+				      row_string (row.mysql[i]));
 	  else
 	    vpk = row.mysql[i];
 
