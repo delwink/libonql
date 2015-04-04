@@ -96,8 +96,8 @@ extern "C"
  * @param n Number of bytes to allocate on the heap.
  * @return Pointer to n bytes of available memory.
  */
-void
-*sqon_malloc (size_t n);
+void *
+sqon_malloc (size_t n);
 
 /**
  * @brief Frees memory allocated with sqon_malloc().
