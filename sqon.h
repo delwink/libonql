@@ -17,8 +17,8 @@
 
 /**
  * @file sqon.h
- * @version 0.0
- * @date 02/14/2015
+ * @version 1.0
+ * @date 04/21/2015
  * @author David McMackins II
  * @brief C implementation for Delwink's SQON
  */
@@ -33,7 +33,7 @@
 /**
  * @brief libsqon software version
  */
-#define SQON_VERSION "0.0.4"
+#define SQON_VERSION "1.0.0"
 
 /**
  * @brief Information about the libsqon copyright holders and license.
@@ -115,7 +115,7 @@ sqon_init (void);
 /**
  * @brief The universal database connection auxiliary structure for libsqon.
  */
-typedef struct dbconn
+typedef struct
 {
   void *com;
   bool isopen;
@@ -124,7 +124,7 @@ typedef struct dbconn
   const char *user;
   const char *passwd;
   const char *database;
-} sqon_dbsrv;
+} sqon_DatabaseServer;
 
 /**
  * @brief Connection type constant for MySQL-based databases.
@@ -140,7 +140,7 @@ typedef struct dbconn
  * @param database The name of the database to be used; can be NULL.
  * @return A new database connection object.
  */
-sqon_dbsrv
+sqon_DatabaseServer
 sqon_new_connection (uint8_t type, const char *host, const char *user,
 		     const char *passwd, const char *database);
 
@@ -150,14 +150,14 @@ sqon_new_connection (uint8_t type, const char *host, const char *user,
  * @return Negative if input error; positive if connection error.
  */
 int
-sqon_connect (sqon_dbsrv *srv);
+sqon_connect (sqon_DatabaseServer *srv);
 
 /**
  * @brief Closes connection to the database server.
  * @param srv Connected database connection object.
  */
 void
-sqon_close (sqon_dbsrv *srv);
+sqon_close (sqon_DatabaseServer *srv);
 
 /**
  * @brief Query the database.
@@ -171,7 +171,8 @@ sqon_close (sqon_dbsrv *srv);
  * @return Negative if input or IO error; positive if error from server.
  */
 int
-sqon_query (sqon_dbsrv *srv, const char *query, char **out, const char *pk);
+sqon_query (sqon_DatabaseServer *srv, const char *query, char **out,
+	    const char *primary_key);
 
 /**
  * @brief Gets the primary key of a table.
@@ -182,19 +183,19 @@ sqon_query (sqon_dbsrv *srv, const char *query, char **out, const char *pk);
  * @return Negative if input or IO error; positive if error from server.
  */
 int
-sqon_get_pk (sqon_dbsrv *srv, const char *table, char **out);
+sqon_get_primary_key (sqon_DatabaseServer *srv, const char *table, char **out);
 
 /**
  * @brief Properly escapes a string for the database engine.
  * @param srv Initialized database connection object.
  * @param in String to be escaped.
- * @param out Output buffer for the escaped string.
- * @param n Size of the output buffer.
+ * @param out Pointer to string which will be allocated and populated with the
+ * escaped value.
  * @param quote Whether to surround the output string in apostrophes.
  * @return Nonzero on error.
  */
 int
-sqon_escape (sqon_dbsrv *srv, const char *in, char *out, size_t n, bool quote);
+sqon_escape (sqon_DatabaseServer *srv, const char *in, char **out, bool quote);
 
 #ifdef __cplusplus
 }

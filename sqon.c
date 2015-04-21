@@ -66,12 +66,11 @@ sqon_init (void)
   json_set_alloc_funcs (sqon_malloc, sqon_free);
 }
 
-struct dbconn
-sqon_new_connection (uint8_t type, const char *host,
-		     const char *user, const char *passwd,
-		     const char *database)
+sqon_DatabaseServer
+sqon_new_connection (uint8_t type, const char *host, const char *user,
+		     const char *passwd, const char *database)
 {
-  struct dbconn out = {
+  sqon_DatabaseServer out = {
     .isopen = false,
     .type = type,
     .host = host,
@@ -83,7 +82,7 @@ sqon_new_connection (uint8_t type, const char *host,
 }
 
 int
-sqon_connect (sqon_dbsrv *srv)
+sqon_connect (sqon_DatabaseServer *srv)
 {
   switch (srv->type)
     {
@@ -104,7 +103,7 @@ sqon_connect (sqon_dbsrv *srv)
 }
 
 void
-sqon_close (sqon_dbsrv *srv)
+sqon_close (sqon_DatabaseServer *srv)
 {
   switch (srv->type)
     {
@@ -117,7 +116,8 @@ sqon_close (sqon_dbsrv *srv)
 }
 
 int
-sqon_query (sqon_dbsrv *srv, const char *query, char **out, const char *pk)
+sqon_query (sqon_DatabaseServer *srv, const char *query, char **out,
+	    const char *pk)
 {
   int rc = 0;
   bool connected = srv->isopen;
@@ -182,7 +182,7 @@ sqon_query (sqon_dbsrv *srv, const char *query, char **out, const char *pk)
 }
 
 int
-sqon_get_pk (sqon_dbsrv *srv, const char *table, char **out)
+sqon_get_primary_key (sqon_DatabaseServer *srv, const char *table, char **out)
 {
   int rc;
   bool connected = srv->isopen;
@@ -269,7 +269,7 @@ sqon_get_pk (sqon_dbsrv *srv, const char *table, char **out)
 }
 
 int
-sqon_escape (sqon_dbsrv *srv, const char *in, char *out, size_t n, bool quote)
+sqon_escape (sqon_DatabaseServer *srv, const char *in, char **out, bool quote)
 {
   int rc = 0;
   bool connected = srv->isopen;
@@ -297,24 +297,19 @@ sqon_escape (sqon_dbsrv *srv, const char *in, char *out, size_t n, bool quote)
     {
     case SQON_DBCONN_MYSQL:
       written.ul = mysql_real_escape_string (srv->com, temp, in, strlen (in));
-      if (written.ul >= n)
+      written.ul += quote ? 3 : 1;
+
+      *out = sqon_malloc (written.ul * sizeof (char));
+      if (NULL == *out)
 	{
-	  rc = SQON_OVERFLOW;
+	  rc = SQON_MEMORYERROR;
 	  break;
 	}
 
       if (quote)
-	{
-	  rc = snprintf (out, n, "'%s'", temp);
-	  if ((size_t) rc >= n)
-	    rc = SQON_OVERFLOW;
-	  else
-	    rc = 0;
-	}
+	snprintf (*out, written.ul, "'%s'", temp);
       else
-	{
-	  strcpy (out, temp);
-	}
+	strcpy (*out, temp);
       break;
 
     default:
