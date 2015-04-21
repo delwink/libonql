@@ -35,8 +35,8 @@ safe_memset (void *v, int c, size_t n)
   return v;
 }
 
-void *
-sqon_malloc (size_t n)
+static void *
+stored_length_malloc (size_t n)
 {
   /* Store the memory area size in the beginning of the block */
   void *v = malloc (n + sizeof (size_t));
@@ -48,8 +48,8 @@ sqon_malloc (size_t n)
   return v + sizeof (size_t);
 }
 
-void
-sqon_free (void *v)
+static void
+stored_length_free (void *v)
 {
   size_t n;
 
@@ -60,10 +60,33 @@ sqon_free (void *v)
   free (v);
 }
 
+static void *(*used_malloc) (size_t n) = stored_length_malloc;
+static void (*used_free) (void *v) = stored_length_free;
+
+void *
+sqon_malloc (size_t n)
+{
+  return (*used_malloc) (n);
+}
+
+void
+sqon_free (void *v)
+{
+  (*used_free) (v);
+}
+
 void
 sqon_init (void)
 {
   json_set_alloc_funcs (sqon_malloc, sqon_free);
+}
+
+void
+sqon_set_alloc_funcs (void *(*new_malloc) (size_t n),
+		      void (*new_free) (void *v))
+{
+  used_malloc = new_malloc;
+  used_free = new_free;
 }
 
 sqon_DatabaseServer

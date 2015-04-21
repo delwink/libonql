@@ -113,6 +113,15 @@ void
 sqon_init (void);
 
 /**
+ * @brief Changes the memory management functions used internally.
+ * @param new_malloc The new malloc() function to be used.
+ * @param new_free The new free() function to be used.
+ */
+void
+sqon_set_alloc_funcs (void *(*new_malloc) (size_t n),
+		      void (*new_free) (void *v));
+
+/**
  * @brief The universal database connection auxiliary structure for libsqon.
  */
 typedef struct
