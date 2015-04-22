@@ -24,15 +24,16 @@ int
 main (int argc, char *argv[])
 {
   int rc = 0;
-  sqon_dbsrv mydb;
+  sqon_DatabaseServer *mydb;
   char *output;
 
   sqon_init ();
 
   mydb = sqon_new_connection (SQON_DBCONN_MYSQL, "localhost",
-			      "myuser", "mypasswd", "mydb");
+			      "myuser", "mypasswd", "mydb", "0");
 
-  rc = sqon_query (&mydb, "SELECT * FROM MyTable", &output, NULL);
+  rc = sqon_query (mydb, "SELECT * FROM MyTable", &output, NULL);
+  sqon_free_connection (mydb);
   if (rc)
     {
       fprintf (stderr, "Error %d\n", rc);
@@ -75,13 +76,13 @@ char **)` parameters.
 
 ``` c
 int rc = 0;
-sqon_dbsrv mydb;
+sqon_DatabaseServer *mydb;
 char *output;
 ```
 
 Here, we declare all the variables we'll need for our program: a place to store
 the return value of `int` functions, a `libsqon` database connection object,
-and a buffer for the database output.
+and a buffer for the query result set.
 
 ``` c
 sqon_init ();
@@ -92,7 +93,7 @@ library will not be able to properly allocate memory internally.
 
 ``` c
 mydb = sqon_new_connection (SQON_DBCONN_MYSQL, "localhost",
-			    "myuser", "mypasswd", "mydb");
+			    "myuser", "mypasswd", "mydb", "0");
 ```
 
 Here, we initialize a database connection object. This object will be
@@ -100,12 +101,13 @@ referenced when calling the database. Its purpose is to make query function
 calls shorter and less error-prone.
 
 The parameters are the type of database we're connecting to, the host of the
-database server, the username, the password, and the database name. These
-fields are optional based on context, but only the database is optional for
-MySQL.
+database server, the username, the password, the database name, and a string
+representation of the port number ("0" uses the default). These fields are
+optional based on context, but only the database is optional for MySQL.
 
 ``` c
-rc = sqon_query (&mydb, "SELECT * FROM MyTable", &output, NULL);
+rc = sqon_query (mydb, "SELECT * FROM MyTable", &output, NULL);
+sqon_free_connection (mydb);
 if (rc)
   {
     fprintf (stderr, "Error %d\n", rc);
@@ -125,6 +127,9 @@ choose must be unique in the return value, or `libsqon` will throw an error.
 In this example, we use `NULL` as the primary key, which will simply return
 each row of the table as elements of an array, not organized by a particular
 key.
+
+After we query the database, we are finished with this connection object, so we
+free the memory allocated to it.
 
 The `if` block here catches any error during the query or output formatting
 process, prints the error code to the screen, and exits the program with an
