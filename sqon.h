@@ -18,7 +18,7 @@
 /**
  * @file sqon.h
  * @version 1.0
- * @date 04/21/2015
+ * @date 04/22/2015
  * @author David McMackins II
  * @brief C implementation for Delwink's SQON
  */
@@ -67,7 +67,7 @@
 #define SQON_UNSUPPORTED -14
 
 /**
- * @brief Error connecting to database server.
+ * @brief Error setting up connection to the database server.
  */
 #define SQON_CONNECTERR  -20
 
@@ -129,10 +129,11 @@ typedef struct
   void *com;
   bool isopen;
   uint8_t type;
-  const char *host;
-  const char *user;
-  const char *passwd;
-  const char *database;
+  char *host;
+  char *user;
+  char *passwd;
+  char *database;
+  char *port;
 } sqon_DatabaseServer;
 
 /**
@@ -147,11 +148,21 @@ typedef struct
  * @param user The username with which to authenticate with the database server.
  * @param passwd The password by which to be authenticated.
  * @param database The name of the database to be used; can be NULL.
- * @return A new database connection object.
+ * @param port String representation of the port number (can be 0 for default).
+ * @return A new database connection object which much be freed with
+ * sqon_free_connection() or NULL on failure.
  */
-sqon_DatabaseServer
+sqon_DatabaseServer *
 sqon_new_connection (uint8_t type, const char *host, const char *user,
-		     const char *passwd, const char *database);
+		     const char *passwd, const char *database,
+		     const char *port);
+
+/**
+ * @brief Destructs a database connection object.
+ * @param srv Initialized database connection object to be freed.
+ */
+void
+sqon_free_connection (sqon_DatabaseServer *srv);
 
 /**
  * @brief Connects to the database server.

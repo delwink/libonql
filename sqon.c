@@ -89,19 +89,92 @@ sqon_set_alloc_funcs (void *(*new_malloc) (size_t n),
   used_free = new_free;
 }
 
-sqon_DatabaseServer
-sqon_new_connection (uint8_t type, const char *host, const char *user,
-		     const char *passwd, const char *database)
+static void *
+mkbuf (const char *s)
 {
-  sqon_DatabaseServer out = {
-    .isopen = false,
-    .type = type,
-    .host = host,
-    .user = user,
-    .passwd = passwd,
-    .database = database
-  };
+  return sqon_malloc ((strlen (s) + 1) * sizeof (char));
+}
+
+sqon_DatabaseServer *
+sqon_new_connection (uint8_t type, const char *host, const char *user,
+		     const char *passwd, const char *database,
+		     const char *port)
+{
+  char *thost = mkbuf (host);
+  if (NULL == thost)
+    return NULL;
+
+  char *tuser = mkbuf (user);
+  if (NULL == tuser)
+    {
+      sqon_free (thost);
+      return NULL;
+    }
+
+  char *tpasswd = mkbuf (passwd);
+  if (NULL == tpasswd)
+    {
+      sqon_free (thost);
+      sqon_free (tuser);
+      return NULL;
+    }
+
+  char *tdb = mkbuf (database);
+  if (NULL == tdb)
+    {
+      sqon_free (thost);
+      sqon_free (tuser);
+      sqon_free (tpasswd);
+      return NULL;
+    }
+
+  char *tport = mkbuf (port);
+  if (NULL == tport)
+    {
+      sqon_free (thost);
+      sqon_free (tuser);
+      sqon_free (tpasswd);
+      sqon_free (tdb);
+      return NULL;
+    }
+
+  sqon_DatabaseServer *out = sqon_malloc (sizeof (sqon_DatabaseServer));
+  if (NULL == out)
+    {
+      sqon_free (thost);
+      sqon_free (tuser);
+      sqon_free (tpasswd);
+      sqon_free (tdb);
+      sqon_free (tport);
+      return NULL;
+    }
+
+  strcpy (thost, host);
+  strcpy (tuser, user);
+  strcpy (tpasswd, passwd);
+  strcpy (tdb, database);
+  strcpy (tport, port);
+
+  out->isopen = false;
+  out->type = type;
+  out->host = thost;
+  out->user = tuser;
+  out->passwd = tpasswd;
+  out->database = tdb;
+  out->port = tport;
+
   return out;
+}
+
+void
+sqon_free_connection (sqon_DatabaseServer *srv)
+{
+  sqon_free (srv->host);
+  sqon_free (srv->user);
+  sqon_free (srv->passwd);
+  sqon_free (srv->database);
+  sqon_free (srv->port);
+  sqon_free (srv);
 }
 
 int
@@ -111,14 +184,24 @@ sqon_connect (sqon_DatabaseServer *srv)
     {
     case SQON_DBCONN_MYSQL:
       srv->com = mysql_init (NULL);
+
+      const char *real_end = srv->port + strlen (srv->port);
+      char *end;
+      unsigned long int port = strtoul (srv->port, &end, 10);
+      if (end != real_end)
+	{
+	  sqon_close (srv);
+	  return SQON_CONNECTERR;
+	}
+
       if (NULL == mysql_real_connect (srv->com, srv->host, srv->user,
-				      srv->passwd, srv->database, 0, NULL,
+				      srv->passwd, srv->database, port, NULL,
 				      CLIENT_MULTI_STATEMENTS))
 	return (int) mysql_errno (srv->com);
       break;
 
     default:
-      return SQON_CONNECTERR;
+      return SQON_UNSUPPORTED;
     }
 
   srv->isopen = true;
