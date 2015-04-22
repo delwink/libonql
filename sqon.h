@@ -176,7 +176,7 @@ sqon_close (sqon_DatabaseServer *srv);
  * JSON-formatted response from the database; must free with sqon_free();
  * populated as object if table has a primary key, else an array; can be NULL
  * if no result is expected.
- * @param pk Primary key expected in return value, if any (else NULL).
+ * @param primary_key Primary key expected in return value, if any (else NULL).
  * @return Negative if input or IO error; positive if error from server.
  */
 int
