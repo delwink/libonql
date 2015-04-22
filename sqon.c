@@ -197,7 +197,11 @@ sqon_connect (sqon_DatabaseServer *srv)
       if (NULL == mysql_real_connect (srv->com, srv->host, srv->user,
 				      srv->passwd, srv->database, port, NULL,
 				      CLIENT_MULTI_STATEMENTS))
-	return (int) mysql_errno (srv->com);
+	{
+	  int rc = (int) mysql_errno (srv->com);
+	  sqon_close (srv);
+	  return rc;
+	}
       break;
 
     default:
