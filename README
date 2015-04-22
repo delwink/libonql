@@ -35,10 +35,10 @@ database with just the change of an `int`.
 Hacking
 -------
 
-libsqon uses the GNU coding style for C, and follows a strict 80-column limit
+libsqon uses the GNU coding style for C, and follows a strict 79-column limit
 in its source code. Indentations are two spaces, and tab characters are eight
 spaces. It is polite to use a tab character any time eight spaces would be
-used, but not required.
+used (outside of strings), but not required.
 
 To submit a patch, [submit your diff to Delwink][2] or use GitHub's pull
 request system.
