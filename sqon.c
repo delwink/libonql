@@ -155,7 +155,7 @@ sqon_new_connection (uint8_t type, const char *host, const char *user,
   strcpy (tdb, database);
   strcpy (tport, port);
 
-  out->isopen = false;
+  out->connections = 0;
   out->type = type;
   out->host = thost;
   out->user = tuser;
@@ -180,65 +180,61 @@ sqon_free_connection (sqon_DatabaseServer *srv)
 int
 sqon_connect (sqon_DatabaseServer *srv)
 {
-  switch (srv->type)
-    {
-    case SQON_DBCONN_MYSQL:
-      srv->com = mysql_init (NULL);
+  if ((srv->connections)++ == 0)
+    switch (srv->type)
+      {
+      case SQON_DBCONN_MYSQL:
+	srv->com = mysql_init (NULL);
 
-      const char *real_end = srv->port + strlen (srv->port);
-      char *end;
-      unsigned long int port = strtoul (srv->port, &end, 10);
-      if (end != real_end)
-	{
-	  sqon_close (srv);
-	  return SQON_CONNECTERR;
-	}
+	const char *real_end = srv->port + strlen (srv->port);
+	char *end;
+	unsigned long int port = strtoul (srv->port, &end, 10);
+	if (end != real_end)
+	  {
+	    sqon_close (srv);
+	    return SQON_CONNECTERR;
+	  }
 
-      if (NULL == mysql_real_connect (srv->com, srv->host, srv->user,
-				      srv->passwd, srv->database, port, NULL,
-				      CLIENT_MULTI_STATEMENTS))
-	{
-	  int rc = (int) mysql_errno (srv->com);
-	  sqon_close (srv);
-	  return rc;
-	}
-      break;
+	if (NULL == mysql_real_connect (srv->com, srv->host, srv->user,
+					srv->passwd, srv->database, port, NULL,
+					CLIENT_MULTI_STATEMENTS))
+	  {
+	    int rc = (int) mysql_errno (srv->com);
+	    sqon_close (srv);
+	    return rc;
+	  }
+	break;
 
-    default:
-      return SQON_UNSUPPORTED;
-    }
+      default:
+	return SQON_UNSUPPORTED;
+      }
 
-  srv->isopen = true;
   return 0;
 }
 
 void
 sqon_close (sqon_DatabaseServer *srv)
 {
-  switch (srv->type)
-    {
-    case SQON_DBCONN_MYSQL:
-      mysql_close (srv->com);
-      mysql_library_end ();
-      srv->isopen = false;
-      break;
-    }
+  if (--(srv->connections) == 0)
+    switch (srv->type)
+      {
+      case SQON_DBCONN_MYSQL:
+	mysql_close (srv->com);
+	mysql_library_end ();
+	break;
+      }
 }
 
 int
 sqon_query (sqon_DatabaseServer *srv, const char *query, char **out,
 	    const char *pk)
 {
-  int rc = 0;
-  bool connected = srv->isopen;
+  int rc;
   union res res;
 
-  if (!connected)
-    {
-      rc = sqon_connect (srv);
-      if (rc)
-	return rc;
-    }
+  rc = sqon_connect (srv);
+  if (rc)
+    return rc;
 
   switch (srv->type)
     {
@@ -246,10 +242,7 @@ sqon_query (sqon_DatabaseServer *srv, const char *query, char **out,
       if (mysql_query (srv->com, query))
 	{
 	  rc = mysql_errno (srv->com);
-
-	  if (!connected)
-	    sqon_close (srv);
-
+	  sqon_close (srv);
 	  return rc;
 	}
       break;
@@ -264,8 +257,7 @@ sqon_query (sqon_DatabaseServer *srv, const char *query, char **out,
 	{
 	case SQON_DBCONN_MYSQL:
 	  res.mysql = mysql_store_result (srv->com);
-	  if (!connected)
-	    sqon_close (srv);
+	  sqon_close (srv);
 	  if (NULL == res.mysql)
 	    {
 	      rc = (int) mysql_errno (srv->com);
@@ -284,8 +276,7 @@ sqon_query (sqon_DatabaseServer *srv, const char *query, char **out,
     }
   else
     {
-      if (!connected)
-	sqon_close (srv);
+      sqon_close (srv);
     }
 
   return rc;
@@ -295,7 +286,6 @@ int
 sqon_get_primary_key (sqon_DatabaseServer *srv, const char *table, char **out)
 {
   int rc;
-  bool connected = srv->isopen;
   char *query;
   size_t qlen = 1;
   const char *fmt;
@@ -326,14 +316,11 @@ sqon_get_primary_key (sqon_DatabaseServer *srv, const char *table, char **out)
       return SQON_OVERFLOW;
     }
 
-  if (!connected)
+  rc = sqon_connect (srv);
+  if (rc)
     {
-      rc = sqon_connect (srv);
-      if (rc)
-	{
-	  sqon_free (query);
-	  return rc;
-	}
+      sqon_free (query);
+      return rc;
     }
 
   switch (srv->type)
@@ -343,14 +330,12 @@ sqon_get_primary_key (sqon_DatabaseServer *srv, const char *table, char **out)
       sqon_free (query);
       if (rc)
 	{
-	  if (!connected)
-	    sqon_close (srv);
+	  sqon_close (srv);
 	  return rc;
 	}
 
       res.mysql = mysql_store_result (srv->com);
-      if (!connected)
-	sqon_close (srv);
+      sqon_close (srv);
 
       if (NULL == res.mysql)
 	return (int) mysql_errno (srv->com);
@@ -381,27 +366,24 @@ sqon_get_primary_key (sqon_DatabaseServer *srv, const char *table, char **out)
 int
 sqon_escape (sqon_DatabaseServer *srv, const char *in, char **out, bool quote)
 {
-  int rc = 0;
-  bool connected = srv->isopen;
-  size_t extra = 1 + quote ? 2 : 0;
-  char *temp = sqon_malloc ((strlen (in) * 2 + extra) * sizeof (char));
-  if (NULL == temp)
-    return SQON_MEMORYERROR;
-
-  if (!connected)
-    {
-      rc = sqon_connect (srv);
-      if (rc)
-	{
-	  sqon_free (temp);
-	  return SQON_CONNECTERR;
-	}
-    }
-
+  int rc;
+  size_t extra = 1 + (quote ? 2 : 0);
+  char *temp;
   union
   {
     unsigned long ul;
   } written;
+
+  temp = sqon_malloc ((strlen (in) * 2 + extra) * sizeof (char));
+  if (NULL == temp)
+    return SQON_MEMORYERROR;
+
+  rc = sqon_connect (srv);
+  if (rc)
+    {
+      sqon_free (temp);
+      return SQON_CONNECTERR;
+    }
 
   switch (srv->type)
     {
@@ -427,8 +409,7 @@ sqon_escape (sqon_DatabaseServer *srv, const char *in, char **out, bool quote)
       break;
     }
 
-  if (!connected)
-    sqon_close (srv);
+  sqon_close (srv);
 
   sqon_free (temp);
   return rc;

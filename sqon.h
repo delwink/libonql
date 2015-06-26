@@ -17,8 +17,8 @@
 
 /**
  * @file sqon.h
- * @version 1.0
- * @date 04/22/2015
+ * @version 1.1
+ * @date 06/26/2015
  * @author David McMackins II
  * @brief C implementation for Delwink's SQON
  */
@@ -33,7 +33,7 @@
 /**
  * @brief libsqon software version
  */
-#define SQON_VERSION "1.0.0"
+#define SQON_VERSION "1.1.0"
 
 /**
  * @brief Information about the libsqon copyright holders and license.
@@ -127,7 +127,7 @@ sqon_set_alloc_funcs (void *(*new_malloc) (size_t n),
 typedef struct
 {
   void *com;
-  bool isopen;
+  uint64_t connections;
   uint8_t type;
   char *host;
   char *user;
