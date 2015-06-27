@@ -119,13 +119,21 @@ sqon_new_connection (uint8_t type, const char *host, const char *user,
       return NULL;
     }
 
-  char *tdb = mkbuf (database);
-  if (NULL == tdb)
+  char *tdb;
+  if (NULL != database)
     {
-      sqon_free (thost);
-      sqon_free (tuser);
-      sqon_free (tpasswd);
-      return NULL;
+      tdb = mkbuf (database);
+      if (NULL == tdb)
+	{
+	  sqon_free (thost);
+	  sqon_free (tuser);
+	  sqon_free (tpasswd);
+	  return NULL;
+	}
+    }
+  else
+    {
+      tdb = NULL;
     }
 
   char *tport = mkbuf (port);
@@ -134,7 +142,8 @@ sqon_new_connection (uint8_t type, const char *host, const char *user,
       sqon_free (thost);
       sqon_free (tuser);
       sqon_free (tpasswd);
-      sqon_free (tdb);
+      if (tdb)
+	sqon_free (tdb);
       return NULL;
     }
 
@@ -144,7 +153,8 @@ sqon_new_connection (uint8_t type, const char *host, const char *user,
       sqon_free (thost);
       sqon_free (tuser);
       sqon_free (tpasswd);
-      sqon_free (tdb);
+      if (tdb)
+	sqon_free (tdb);
       sqon_free (tport);
       return NULL;
     }
@@ -152,7 +162,8 @@ sqon_new_connection (uint8_t type, const char *host, const char *user,
   strcpy (thost, host);
   strcpy (tuser, user);
   strcpy (tpasswd, passwd);
-  strcpy (tdb, database);
+  if (tdb)
+    strcpy (tdb, database);
   strcpy (tport, port);
 
   out->connections = 0;
@@ -172,7 +183,8 @@ sqon_free_connection (sqon_DatabaseServer *srv)
   sqon_free (srv->host);
   sqon_free (srv->user);
   sqon_free (srv->passwd);
-  sqon_free (srv->database);
+  if (srv->database)
+    sqon_free (srv->database);
   sqon_free (srv->port);
   sqon_free (srv);
 }
