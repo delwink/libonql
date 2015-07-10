@@ -394,7 +394,7 @@ sqon_escape (sqon_DatabaseServer *srv, const char *in, char **out, bool quote)
   if (rc)
     {
       sqon_free (temp);
-      return SQON_CONNECTERR;
+      return rc;
     }
 
   switch (srv->type)
