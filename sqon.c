@@ -56,7 +56,7 @@ stored_length_free (void *v)
   v -= sizeof (size_t);
   n = *((size_t *) v);
 
-  safe_memset (v, 0, n + sizeof (size_t));
+  safe_memset (v, 0xDF, n + sizeof (size_t));
   free (v);
 }
 
