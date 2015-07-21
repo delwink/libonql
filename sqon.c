@@ -17,6 +17,7 @@
 
 #include <jansson.h>
 #include <mysql/mysql.h>
+#include <postgresql/libpq-fe.h>
 #include <string.h>
 
 #include "sqon.h"
@@ -205,7 +206,7 @@ sqon_connect (sqon_DatabaseServer *srv)
 
 	const char *real_end = srv->port + strlen (srv->port);
 	char *end;
-	unsigned long int port = strtoul (srv->port, &end, 10);
+	unsigned long port = strtoul (srv->port, &end, 10);
 	if (end != real_end)
 	  {
 	    rc = SQON_CONNECTERR;
@@ -218,6 +219,14 @@ sqon_connect (sqon_DatabaseServer *srv)
 	  {
 	    rc = (int) mysql_errno (srv->com);
 	  }
+	break;
+
+      case SQON_DBCONN_POSTGRES:
+	srv->com = PQsetdbLogin (srv->host, srv->port, "", "", srv->database,
+				 srv->user, srv->passwd);
+
+	if ((rc = PQstatus (srv->com)) == CONNECTION_OK)
+	  rc = 0;
 	break;
 
       default:
@@ -241,6 +250,10 @@ sqon_close (sqon_DatabaseServer *srv)
       case SQON_DBCONN_MYSQL:
 	mysql_close (srv->com);
 	mysql_library_end ();
+	break;
+
+      case SQON_DBCONN_POSTGRES:
+	PQfinish (srv->com);
 	break;
       }
 }
