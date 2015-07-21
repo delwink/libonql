@@ -180,6 +180,9 @@ sqon_new_connection (enum sqon_database_type type, const char *host,
 void
 sqon_free_connection (sqon_DatabaseServer *srv)
 {
+  while (srv->connections)
+    sqon_close (srv);
+
   sqon_free (srv->host);
   sqon_free (srv->user);
   sqon_free (srv->passwd);
