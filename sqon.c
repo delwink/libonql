@@ -96,9 +96,9 @@ mkbuf (const char *s)
 }
 
 sqon_DatabaseServer *
-sqon_new_connection (enum sqon_database_type type, const char *host, const char *user,
-		     const char *passwd, const char *database,
-		     const char *port)
+sqon_new_connection (enum sqon_database_type type, const char *host,
+		     const char *user, const char *passwd,
+		     const char *database, const char *port)
 {
   char *thost = mkbuf (host);
   if (NULL == thost)
@@ -192,7 +192,9 @@ sqon_free_connection (sqon_DatabaseServer *srv)
 int
 sqon_connect (sqon_DatabaseServer *srv)
 {
-  if ((srv->connections)++ == 0)
+  int rc = 0;
+
+  if (++(srv->connections) == 1)
     switch (srv->type)
       {
       case SQON_DBCONN_MYSQL:
@@ -203,25 +205,28 @@ sqon_connect (sqon_DatabaseServer *srv)
 	unsigned long int port = strtoul (srv->port, &end, 10);
 	if (end != real_end)
 	  {
-	    sqon_close (srv);
-	    return SQON_CONNECTERR;
+	    rc = SQON_CONNECTERR;
+	    break;
 	  }
 
 	if (NULL == mysql_real_connect (srv->com, srv->host, srv->user,
 					srv->passwd, srv->database, port, NULL,
 					CLIENT_MULTI_STATEMENTS))
 	  {
-	    int rc = (int) mysql_errno (srv->com);
-	    sqon_close (srv);
-	    return rc;
+	    rc = (int) mysql_errno (srv->com);
 	  }
 	break;
 
       default:
-	return SQON_UNSUPPORTED;
+	rc = SQON_UNSUPPORTED;
+	--srv->connections;
+	break;
       }
 
-  return 0;
+  if (rc && rc != SQON_UNSUPPORTED)
+    sqon_close (srv);
+
+  return rc;
 }
 
 void
