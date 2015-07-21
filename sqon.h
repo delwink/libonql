@@ -126,7 +126,8 @@ typedef struct
  */
 enum sqon_database_type
   {
-    SQON_DBCONN_MYSQL = 1
+    SQON_DBCONN_MYSQL = 1,
+    SQON_DBCONN_POSTGRES
   };
 
 /**
