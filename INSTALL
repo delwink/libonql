@@ -3,10 +3,11 @@ Installing libsqon
 
 Before installing libsqon, one must satisfy its runtime and build dependencies.
 
-| Library            | Purpose                                    |
-|--------------------+--------------------------------------------|
-| Jansson            | JavaScript Object Notation (JSON) support. |
-| MySQL              | Support for the MySQL database engine.     |
+| Library    | Purpose                                     |
+|------------|---------------------------------------------|
+| Jansson    | JavaScript Object Notation (JSON) support.  |
+| MySQL      | Support for the MySQL database engine.      |
+| PostgreSQL | Support for the PostgreSQL database engine. |
 
 Installing the Dependencies
 ---------------------------
@@ -16,7 +17,7 @@ manager. These differ between distributions; we have below the example for
 Debian GNU/Linux and derivatives (such as Trisquel).
 
     # apt-get install build-essential autoconf automake libtool
-    # apt-get install libjansson-dev libmysqlclient-dev
+    # apt-get install libjansson-dev libmysqlclient-dev libpq-dev
 
 Building libsqon
 ----------------
