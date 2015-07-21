@@ -31,11 +31,13 @@ union res
 union fields
 {
   MYSQL_FIELD *mysql;
+  PGresult *postgres;
 };
 
 union row
 {
   MYSQL_ROW mysql;
+  int postgres;
 };
 
 int
