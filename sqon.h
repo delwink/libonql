@@ -141,9 +141,9 @@ enum sqon_database_type
  * sqon_free_connection() or NULL on failure.
  */
 sqon_DatabaseServer *
-sqon_new_connection (uint8_t type, const char *host, const char *user,
-		     const char *passwd, const char *database,
-		     const char *port);
+sqon_new_connection (enum sqon_database_type type, const char *host,
+		     const char *user, const char *passwd,
+		     const char *database, const char *port);
 
 /**
  * @brief Destructs a database connection object.

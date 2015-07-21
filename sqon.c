@@ -96,7 +96,7 @@ mkbuf (const char *s)
 }
 
 sqon_DatabaseServer *
-sqon_new_connection (uint8_t type, const char *host, const char *user,
+sqon_new_connection (enum sqon_database_type type, const char *host, const char *user,
 		     const char *passwd, const char *database,
 		     const char *port)
 {
