@@ -20,9 +20,7 @@
 
 #include <mysql/mysql.h>
 #include <postgresql/libpq-fe.h>
-#include <jansson.h>
-
-#include "sqon.h"
+#include <stdint.h>
 
 union res
 {

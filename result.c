@@ -18,8 +18,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <jansson.h>
 
 #include "result.h"
+#include "sqon.h"
 
 static int
 check_pk (uint8_t type, union fields fields, size_t num_fields, const char *pk)
