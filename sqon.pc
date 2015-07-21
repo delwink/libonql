@@ -6,7 +6,7 @@ exec_prefix = ${prefix}
 libdir = ${exec_prefix}/lib
 includedir = ${prefix}/include
 
-Version: 0.0
+Version: 1.2.0
 Cflags = -I${includedir}
 Description: Delwink JSON API for SQL databases
 Name: sqon

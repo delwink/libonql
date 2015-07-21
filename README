@@ -3,7 +3,8 @@ libsqon
 
 SQON - Structured Query Object Notation (Delwink C Implementation)
 
-Query SQL databases and get JSON results. Current target: MySQL.
+Query SQL databases and get JSON results. Current targets: MySQL and
+PostgreSQL.
 
 Why SQON?
 ---------

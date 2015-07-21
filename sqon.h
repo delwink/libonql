@@ -17,8 +17,8 @@
 
 /**
  * @file sqon.h
- * @version 1.1
- * @date 06/26/2015
+ * @version 1.2
+ * @date 07/21/2015
  * @author David McMackins II
  * @brief C implementation for Delwink's SQON
  */
@@ -33,7 +33,7 @@
 /**
  * @brief libsqon software version
  */
-#define SQON_VERSION "1.1.3"
+#define SQON_VERSION "1.2.0"
 
 /**
  * @brief Information about the libsqon copyright holders and license.
@@ -51,45 +51,30 @@
 "You should have received a copy of the GNU Affero General Public License\n"\
 "along with this program.  If not, see <http://www.gnu.org/licenses/>."
 
-/**
- * @brief Error allocating memory.
- */
-#define SQON_MEMORYERROR -12
-
-/**
- * @brief Buffer overflow.
- */
-#define SQON_OVERFLOW    -13
-
-/**
- * @brief Unsupported SQON object.
- */
-#define SQON_UNSUPPORTED -14
-
-/**
- * @brief Error setting up connection to the database server.
- */
-#define SQON_CONNECTERR  -20
-
-/**
- * @brief Expecting return columns, but found none.
- */
-#define SQON_NOCOLUMNS   -21
-
-/**
- * @brief Specified primary key was not returned.
- */
-#define SQON_NOPK        -23
-
-/**
- * @brief Specified primary key was not unique among returned data.
- */
-#define SQON_PKNOTUNIQUE -24
-
 #ifdef __cplusplus
-extern "C"
-{
+# define __BEGIN_DECLS extern "C" {
+# define __END_DECLS }
+#else
+# define __BEGIN_DECLS
+# define __END_DECLS
 #endif
+
+__BEGIN_DECLS
+
+/**
+ * @brief Error codes returned on failure.
+ */
+enum sqon_error
+  {
+    SQON_MEMORYERROR = -12,
+    SQON_OVERFLOW    = -13,
+    SQON_UNSUPPORTED = -14,
+
+    SQON_CONNECTERR  = -20,
+    SQON_NOCOLUMNS   = -21,
+    SQON_NOPK        = -23,
+    SQON_PKNOTUNIQUE = -24
+  };
 
 /**
  * @brief More secure implementation of stdlib's malloc().
@@ -137,9 +122,12 @@ typedef struct
 } sqon_DatabaseServer;
 
 /**
- * @brief Connection type constant for MySQL-based databases.
+ * @brief Constants for storing the type of a database connection.
  */
-#define SQON_DBCONN_MYSQL 1
+enum sqon_database_type
+  {
+    SQON_DBCONN_MYSQL = 1
+  };
 
 /**
  * @brief Constructs a database connection.
@@ -217,8 +205,6 @@ sqon_get_primary_key (sqon_DatabaseServer *srv, const char *table, char **out);
 int
 sqon_escape (sqon_DatabaseServer *srv, const char *in, char **out, bool quote);
 
-#ifdef __cplusplus
-}
-#endif
+__END_DECLS
 
 #endif
