@@ -265,6 +265,8 @@ sqon_query (sqon_DatabaseServer *srv, const char *query, char **out,
   int rc;
   union res res;
 
+  res.mysql = NULL;
+
   rc = sqon_connect (srv);
   if (rc)
     return rc;
@@ -275,6 +277,15 @@ sqon_query (sqon_DatabaseServer *srv, const char *query, char **out,
       if (mysql_query (srv->com, query))
 	{
 	  rc = mysql_errno (srv->com);
+	  sqon_close (srv);
+	  return rc;
+	}
+      break;
+
+    case SQON_DBCONN_POSTGRES:
+      res.postgres = PQexec (srv->com, query);
+      if ((rc = PQresultStatus (res.postgres)) != PGRES_COMMAND_OK)
+	{
 	  sqon_close (srv);
 	  return rc;
 	}
@@ -305,11 +316,22 @@ sqon_query (sqon_DatabaseServer *srv, const char *query, char **out,
 	    }
 	  mysql_free_result (res.mysql);
 	  break;
+
+	case SQON_DBCONN_POSTGRES:
+	  rc = res_to_json (SQON_DBCONN_POSTGRES, res.postgres, out, pk);
+	  break;
 	}
     }
   else
     {
       sqon_close (srv);
+    }
+
+  switch (srv->type)
+    {
+    case SQON_DBCONN_POSTGRES:
+      PQclear (res.postgres);
+      break;
     }
 
   return rc;
