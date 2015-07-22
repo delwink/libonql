@@ -345,8 +345,6 @@ sqon_get_primary_key (sqon_DatabaseServer *srv, const char *table, char **out)
   char *query, *esc_table;
   size_t qlen = 1;
   const char *fmt, *key_column;
-  union res res;
-  union row row;
 
   switch (srv->type)
     {
@@ -413,7 +411,7 @@ sqon_get_primary_key (sqon_DatabaseServer *srv, const char *table, char **out)
   if (rc)
     return rc;
 
-  json_t *res_set = json_loads (res, JSON_ALLOW_NUL, NULL);
+  json_t *res_set = json_loads (res, 0, NULL);
   sqon_free (res);
   if (NULL == res_set)
     return SQON_MEMORYERROR;
