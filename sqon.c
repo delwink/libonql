@@ -319,6 +319,7 @@ sqon_query (sqon_DatabaseServer *srv, const char *query, char **out,
 
 	case SQON_DBCONN_POSTGRES:
 	  rc = res_to_json (SQON_DBCONN_POSTGRES, res.postgres, out, pk);
+	  PQclear (res.postgres);
 	  break;
 	}
     }
@@ -341,9 +342,9 @@ int
 sqon_get_primary_key (sqon_DatabaseServer *srv, const char *table, char **out)
 {
   int rc;
-  char *query;
+  char *query, *esc_table;
   size_t qlen = 1;
-  const char *fmt;
+  const char *fmt, *key_column;
   union res res;
   union row row;
 
@@ -351,20 +352,48 @@ sqon_get_primary_key (sqon_DatabaseServer *srv, const char *table, char **out)
     {
     case SQON_DBCONN_MYSQL:
       fmt = "SHOW KEYS FROM %s WHERE Key_name = 'PRIMARY'";
+      key_column = "Column_name";
+      break;
+
+    case SQON_DBCONN_POSTGRES:
+      fmt = "SELECT c.column_name FROM information_schema.table_constraints tc"
+	" JOIN information_schema.constraint_column_usage AS ccu"
+	  " USING (constraint_schema, constraing_name)"
+	" JOIN information_schema.columns AS c"
+	  " ON c.table_schema = tc.constraint_schema"
+	    " AND tc.table_name = c.table_name"
+	    " AND ccu.column_name = c.column_name"
+	" WHERE constraint_type = 'PRIMARY KEY' AND tc.table_name = '%s'";
+      key_column = "column_name";
       break;
 
     default:
       return SQON_UNSUPPORTED;
     }
 
+  esc_table = sqon_malloc ((strlen (table) * 2 + 1) * sizeof (char));
+  if (NULL == esc_table)
+    return SQON_MEMORYERROR;
+
+  rc = sqon_escape (srv, table, &esc_table, false);
+  if (rc)
+    {
+      sqon_free (esc_table);
+      return rc;
+    }
+
   qlen += strlen (fmt);
-  qlen += strlen (table);
+  qlen += strlen (esc_table);
 
   query = sqon_malloc (qlen * sizeof (char));
   if (NULL == query)
-    return SQON_MEMORYERROR;
+    {
+      sqon_free (esc_table);
+      return SQON_MEMORYERROR;
+    }
 
-  rc = snprintf (query, qlen, fmt, table);
+  rc = snprintf (query, qlen, fmt, esc_table);
+  sqon_free (esc_table);
   if ((size_t) rc >= qlen)
     {
       sqon_free (query);
@@ -378,42 +407,36 @@ sqon_get_primary_key (sqon_DatabaseServer *srv, const char *table, char **out)
       return rc;
     }
 
-  switch (srv->type)
+  char *res;
+  rc = sqon_query (srv, query, &res, NULL);
+  sqon_free (query);
+  if (rc)
+    return rc;
+
+  json_t *res_set = json_loads (res, JSON_ALLOW_NUL, NULL);
+  sqon_free (res);
+  if (NULL == res_set)
+    return SQON_MEMORYERROR;
+
+  json_t *res_obj = json_array_get (res_set, 0);
+  if (NULL == res_obj)
     {
-    case SQON_DBCONN_MYSQL:
-      rc = mysql_query (srv->com, query);
-      sqon_free (query);
-      if (rc)
-	{
-	  sqon_close (srv);
-	  return rc;
-	}
-
-      res.mysql = mysql_store_result (srv->com);
-      sqon_close (srv);
-
-      if (NULL == res.mysql)
-	return (int) mysql_errno (srv->com);
-
-      row.mysql = mysql_fetch_row (res.mysql);
-      if (!row.mysql)
-	{
-	  mysql_free_result (res.mysql);
-	  return SQON_NOPK;
-	}
-
-      size_t len = strlen (row.mysql[4]);
-      *out = sqon_malloc ((len + 1) * sizeof (char));
-      if (NULL == *out)
-	{
-	  mysql_free_result (res.mysql);
-	  return SQON_MEMORYERROR;
-	}
-
-      strcpy (*out, row.mysql[4]);
-      mysql_free_result (res.mysql);
-      break;
+      json_decref (res_set);
+      return SQON_NOPK;
     }
+
+  const char *primary_key = json_string_value (json_object_get (res_obj,
+								key_column));
+
+  *out = sqon_malloc ((strlen (primary_key) + 1) * sizeof (char));
+  if (NULL == *out)
+    {
+      json_decref (res_set);
+      return SQON_MEMORYERROR;
+    }
+
+  strcpy (*out, primary_key);
+  json_decref (res_set);
 
   return 0;
 }
@@ -423,7 +446,7 @@ sqon_escape (sqon_DatabaseServer *srv, const char *in, char **out, bool quote)
 {
   int rc;
   size_t extra = 1 + (quote ? 2 : 0);
-  char *temp;
+  char *temp, *quoted;
   union
   {
     unsigned long ul;
@@ -457,6 +480,35 @@ sqon_escape (sqon_DatabaseServer *srv, const char *in, char **out, bool quote)
 	snprintf (*out, written.ul, "'%s'", temp);
       else
 	strcpy (*out, temp);
+      break;
+
+    case SQON_DBCONN_POSTGRES:
+      quoted = PQescapeLiteral (srv->com, in, strlen (in));
+      if (NULL == quoted)
+	{
+	  rc = SQON_MEMORYERROR;
+	  break;
+	}
+
+      if (quote)
+	{
+	  strcpy (temp, quoted);
+	}
+      else
+	{
+	  quoted[strlen (quoted) - 1] = '\0';
+	  strcpy (temp, quoted + 1);
+	}
+      PQfreemem (quoted);
+
+      *out = sqon_malloc ((strlen (temp) + 1) * sizeof (char));
+      if (NULL == *out)
+	{
+	  rc = SQON_MEMORYERROR;
+	  break;
+	}
+
+      strcpy (*out, temp);
       break;
 
     default:
