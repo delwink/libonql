@@ -101,7 +101,7 @@ sqon_new_connection (enum sqon_database_type type, const char *host,
 		     const char *user, const char *passwd,
 		     const char *database, const char *port)
 {
-  const char *realport = NULL;
+  const char *realport = port;
   if (!strcmp (realport, "0"))
     switch (type)
       {
@@ -110,7 +110,6 @@ sqon_new_connection (enum sqon_database_type type, const char *host,
 	break;
 
       default:
-	realport = port;
 	break;
       }
 
