@@ -296,7 +296,9 @@ sqon_query (sqon_DatabaseServer *srv, const char *query, char **out,
 
     case SQON_DBCONN_POSTGRES:
       res.postgres = PQexec (srv->com, query);
-      if ((rc = PQresultStatus (res.postgres)) != PGRES_COMMAND_OK)
+      rc = PQresultStatus (res.postgres);
+
+      if (rc != PGRES_COMMAND_OK && rc != PGRES_TUPLES_OK)
 	{
 	  sqon_close (srv);
 	  return rc;
@@ -331,7 +333,6 @@ sqon_query (sqon_DatabaseServer *srv, const char *query, char **out,
 
 	case SQON_DBCONN_POSTGRES:
 	  rc = res_to_json (SQON_DBCONN_POSTGRES, res.postgres, out, pk);
-	  PQclear (res.postgres);
 	  break;
 	}
     }
