@@ -369,10 +369,6 @@ sqon_get_primary_key (sqon_DatabaseServer *srv, const char *table, char **out)
       return SQON_UNSUPPORTED;
     }
 
-  esc_table = sqon_malloc ((strlen (table) * 2 + 1) * sizeof (char));
-  if (NULL == esc_table)
-    return SQON_MEMORYERROR;
-
   rc = sqon_escape (srv, table, &esc_table, false);
   if (rc)
     {
