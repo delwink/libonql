@@ -499,12 +499,12 @@ sqon_escape (sqon_DatabaseServer *srv, const char *in, char **out, bool quote)
 
       if (quote)
 	{
-	  strcpy (temp, quoted);
+	  strcpy (temp, quoted + 2);
 	}
       else
 	{
 	  quoted[strlen (quoted) - 1] = '\0';
-	  strcpy (temp, quoted + 1);
+	  strcpy (temp, quoted + 3);
 	}
       PQfreemem (quoted);
 
