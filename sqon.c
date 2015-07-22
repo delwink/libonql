@@ -101,6 +101,19 @@ sqon_new_connection (enum sqon_database_type type, const char *host,
 		     const char *user, const char *passwd,
 		     const char *database, const char *port)
 {
+  const char *realport = NULL;
+  if (!strcmp (realport, "0"))
+    switch (type)
+      {
+      case SQON_DBCONN_POSTGRES:
+	realport = "5432";
+	break;
+
+      default:
+	realport = port;
+	break;
+      }
+
   char *thost = mkbuf (host);
   if (NULL == thost)
     return NULL;
@@ -137,7 +150,7 @@ sqon_new_connection (enum sqon_database_type type, const char *host,
       tdb = NULL;
     }
 
-  char *tport = mkbuf (port);
+  char *tport = mkbuf (realport);
   if (NULL == tport)
     {
       sqon_free (thost);
@@ -165,7 +178,7 @@ sqon_new_connection (enum sqon_database_type type, const char *host,
   strcpy (tpasswd, passwd);
   if (tdb)
     strcpy (tdb, database);
-  strcpy (tport, port);
+  strcpy (tport, realport);
 
   out->connections = 0;
   out->type = type;
