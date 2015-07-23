@@ -367,15 +367,11 @@ sqon_get_primary_key (sqon_DatabaseServer *srv, const char *table, char **out)
       break;
 
     case SQON_DBCONN_POSTGRES:
-      fmt = "SELECT c.column_name FROM information_schema.table_constraints tc"
-	" JOIN information_schema.constraint_column_usage AS ccu"
-	  " USING (constraint_schema, constraing_name)"
-	" JOIN information_schema.columns AS c"
-	  " ON c.table_schema = tc.constraint_schema"
-	    " AND tc.table_name = c.table_name"
-	    " AND ccu.column_name = c.column_name"
-	" WHERE constraint_type = 'PRIMARY KEY' AND tc.table_name = '%s'";
-      key_column = "column_name";
+      fmt = "SELECT a.attname FROM pg_index i "
+	"JOIN pg_attribute a ON a.attrelid = i.indrelid "
+	  "AND a.attnum = ANY(i.indkey) "
+	"WHERE i.indrelid = '%s'::regclass AND i.indisprimary";
+      key_column = "attname";
       break;
 
     default:
@@ -499,12 +495,12 @@ sqon_escape (sqon_DatabaseServer *srv, const char *in, char **out, bool quote)
 
       if (quote)
 	{
-	  strcpy (temp, quoted + 2);
+	  strcpy (temp, strstr (quoted, "'"));
 	}
       else
 	{
 	  quoted[strlen (quoted) - 1] = '\0';
-	  strcpy (temp, quoted + 3);
+	  strcpy (temp, strstr (quoted, "'") + 1);
 	}
       PQfreemem (quoted);
 
