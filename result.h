@@ -19,23 +19,25 @@
 #define DELWINK_SQON_SQLQUERY_H
 
 #include <mysql/mysql.h>
-#include <jansson.h>
-
-#include "sqon.h"
+#include <postgresql/libpq-fe.h>
+#include <stdint.h>
 
 union res
 {
   MYSQL_RES *mysql;
+  PGresult *postgres;
 };
 
 union fields
 {
   MYSQL_FIELD *mysql;
+  PGresult *postgres;
 };
 
 union row
 {
   MYSQL_ROW mysql;
+  int postgres;
 };
 
 int

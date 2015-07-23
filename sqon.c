@@ -17,6 +17,7 @@
 
 #include <jansson.h>
 #include <mysql/mysql.h>
+#include <postgresql/libpq-fe.h>
 #include <string.h>
 
 #include "sqon.h"
@@ -100,6 +101,18 @@ sqon_new_connection (enum sqon_database_type type, const char *host,
 		     const char *user, const char *passwd,
 		     const char *database, const char *port)
 {
+  const char *realport = port;
+  if (!strcmp (realport, "0"))
+    switch (type)
+      {
+      case SQON_DBCONN_POSTGRES:
+	realport = "5432";
+	break;
+
+      default:
+	break;
+      }
+
   char *thost = mkbuf (host);
   if (NULL == thost)
     return NULL;
@@ -136,7 +149,7 @@ sqon_new_connection (enum sqon_database_type type, const char *host,
       tdb = NULL;
     }
 
-  char *tport = mkbuf (port);
+  char *tport = mkbuf (realport);
   if (NULL == tport)
     {
       sqon_free (thost);
@@ -164,7 +177,7 @@ sqon_new_connection (enum sqon_database_type type, const char *host,
   strcpy (tpasswd, passwd);
   if (tdb)
     strcpy (tdb, database);
-  strcpy (tport, port);
+  strcpy (tport, realport);
 
   out->connections = 0;
   out->type = type;
@@ -180,6 +193,9 @@ sqon_new_connection (enum sqon_database_type type, const char *host,
 void
 sqon_free_connection (sqon_DatabaseServer *srv)
 {
+  while (srv->connections)
+    sqon_close (srv);
+
   sqon_free (srv->host);
   sqon_free (srv->user);
   sqon_free (srv->passwd);
@@ -202,7 +218,7 @@ sqon_connect (sqon_DatabaseServer *srv)
 
 	const char *real_end = srv->port + strlen (srv->port);
 	char *end;
-	unsigned long int port = strtoul (srv->port, &end, 10);
+	unsigned long port = strtoul (srv->port, &end, 10);
 	if (end != real_end)
 	  {
 	    rc = SQON_CONNECTERR;
@@ -215,6 +231,14 @@ sqon_connect (sqon_DatabaseServer *srv)
 	  {
 	    rc = (int) mysql_errno (srv->com);
 	  }
+	break;
+
+      case SQON_DBCONN_POSTGRES:
+	srv->com = PQsetdbLogin (srv->host, srv->port, "", "", srv->database,
+				 srv->user, srv->passwd);
+
+	if ((rc = PQstatus (srv->com)) == CONNECTION_OK)
+	  rc = 0;
 	break;
 
       default:
@@ -239,6 +263,10 @@ sqon_close (sqon_DatabaseServer *srv)
 	mysql_close (srv->com);
 	mysql_library_end ();
 	break;
+
+      case SQON_DBCONN_POSTGRES:
+	PQfinish (srv->com);
+	break;
       }
 }
 
@@ -248,6 +276,8 @@ sqon_query (sqon_DatabaseServer *srv, const char *query, char **out,
 {
   int rc;
   union res res;
+
+  res.mysql = NULL;
 
   rc = sqon_connect (srv);
   if (rc)
@@ -259,6 +289,17 @@ sqon_query (sqon_DatabaseServer *srv, const char *query, char **out,
       if (mysql_query (srv->com, query))
 	{
 	  rc = mysql_errno (srv->com);
+	  sqon_close (srv);
+	  return rc;
+	}
+      break;
+
+    case SQON_DBCONN_POSTGRES:
+      res.postgres = PQexec (srv->com, query);
+      rc = PQresultStatus (res.postgres);
+
+      if (rc != PGRES_COMMAND_OK && rc != PGRES_TUPLES_OK)
+	{
 	  sqon_close (srv);
 	  return rc;
 	}
@@ -289,11 +330,22 @@ sqon_query (sqon_DatabaseServer *srv, const char *query, char **out,
 	    }
 	  mysql_free_result (res.mysql);
 	  break;
+
+	case SQON_DBCONN_POSTGRES:
+	  rc = res_to_json (SQON_DBCONN_POSTGRES, res.postgres, out, pk);
+	  break;
 	}
     }
   else
     {
       sqon_close (srv);
+    }
+
+  switch (srv->type)
+    {
+    case SQON_DBCONN_POSTGRES:
+      PQclear (res.postgres);
+      break;
     }
 
   return rc;
@@ -303,30 +355,48 @@ int
 sqon_get_primary_key (sqon_DatabaseServer *srv, const char *table, char **out)
 {
   int rc;
-  char *query;
+  char *query, *esc_table;
   size_t qlen = 1;
-  const char *fmt;
-  union res res;
-  union row row;
+  const char *fmt, *key_column;
 
   switch (srv->type)
     {
     case SQON_DBCONN_MYSQL:
       fmt = "SHOW KEYS FROM %s WHERE Key_name = 'PRIMARY'";
+      key_column = "Column_name";
+      break;
+
+    case SQON_DBCONN_POSTGRES:
+      fmt = "SELECT a.attname FROM pg_index i "
+	"JOIN pg_attribute a ON a.attrelid = i.indrelid "
+	  "AND a.attnum = ANY(i.indkey) "
+	"WHERE i.indrelid = '%s'::regclass AND i.indisprimary";
+      key_column = "attname";
       break;
 
     default:
       return SQON_UNSUPPORTED;
     }
 
+  rc = sqon_escape (srv, table, &esc_table, false);
+  if (rc)
+    {
+      sqon_free (esc_table);
+      return rc;
+    }
+
   qlen += strlen (fmt);
-  qlen += strlen (table);
+  qlen += strlen (esc_table);
 
   query = sqon_malloc (qlen * sizeof (char));
   if (NULL == query)
-    return SQON_MEMORYERROR;
+    {
+      sqon_free (esc_table);
+      return SQON_MEMORYERROR;
+    }
 
-  rc = snprintf (query, qlen, fmt, table);
+  rc = snprintf (query, qlen, fmt, esc_table);
+  sqon_free (esc_table);
   if ((size_t) rc >= qlen)
     {
       sqon_free (query);
@@ -340,42 +410,36 @@ sqon_get_primary_key (sqon_DatabaseServer *srv, const char *table, char **out)
       return rc;
     }
 
-  switch (srv->type)
+  char *res;
+  rc = sqon_query (srv, query, &res, NULL);
+  sqon_free (query);
+  if (rc)
+    return rc;
+
+  json_t *res_set = json_loads (res, 0, NULL);
+  sqon_free (res);
+  if (NULL == res_set)
+    return SQON_MEMORYERROR;
+
+  json_t *res_obj = json_array_get (res_set, 0);
+  if (NULL == res_obj)
     {
-    case SQON_DBCONN_MYSQL:
-      rc = mysql_query (srv->com, query);
-      sqon_free (query);
-      if (rc)
-	{
-	  sqon_close (srv);
-	  return rc;
-	}
-
-      res.mysql = mysql_store_result (srv->com);
-      sqon_close (srv);
-
-      if (NULL == res.mysql)
-	return (int) mysql_errno (srv->com);
-
-      row.mysql = mysql_fetch_row (res.mysql);
-      if (!row.mysql)
-	{
-	  mysql_free_result (res.mysql);
-	  return SQON_NOPK;
-	}
-
-      size_t len = strlen (row.mysql[4]);
-      *out = sqon_malloc ((len + 1) * sizeof (char));
-      if (NULL == *out)
-	{
-	  mysql_free_result (res.mysql);
-	  return SQON_MEMORYERROR;
-	}
-
-      strcpy (*out, row.mysql[4]);
-      mysql_free_result (res.mysql);
-      break;
+      json_decref (res_set);
+      return SQON_NOPK;
     }
+
+  const char *primary_key = json_string_value (json_object_get (res_obj,
+								key_column));
+
+  *out = sqon_malloc ((strlen (primary_key) + 1) * sizeof (char));
+  if (NULL == *out)
+    {
+      json_decref (res_set);
+      return SQON_MEMORYERROR;
+    }
+
+  strcpy (*out, primary_key);
+  json_decref (res_set);
 
   return 0;
 }
@@ -385,7 +449,7 @@ sqon_escape (sqon_DatabaseServer *srv, const char *in, char **out, bool quote)
 {
   int rc;
   size_t extra = 1 + (quote ? 2 : 0);
-  char *temp;
+  char *temp, *quoted;
   union
   {
     unsigned long ul;
@@ -419,6 +483,35 @@ sqon_escape (sqon_DatabaseServer *srv, const char *in, char **out, bool quote)
 	snprintf (*out, written.ul, "'%s'", temp);
       else
 	strcpy (*out, temp);
+      break;
+
+    case SQON_DBCONN_POSTGRES:
+      quoted = PQescapeLiteral (srv->com, in, strlen (in));
+      if (NULL == quoted)
+	{
+	  rc = SQON_MEMORYERROR;
+	  break;
+	}
+
+      if (quote)
+	{
+	  strcpy (temp, strstr (quoted, "'"));
+	}
+      else
+	{
+	  quoted[strlen (quoted) - 1] = '\0';
+	  strcpy (temp, strstr (quoted, "'") + 1);
+	}
+      PQfreemem (quoted);
+
+      *out = sqon_malloc ((strlen (temp) + 1) * sizeof (char));
+      if (NULL == *out)
+	{
+	  rc = SQON_MEMORYERROR;
+	  break;
+	}
+
+      strcpy (*out, temp);
       break;
 
     default:

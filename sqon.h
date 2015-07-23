@@ -126,7 +126,8 @@ typedef struct
  */
 enum sqon_database_type
   {
-    SQON_DBCONN_MYSQL = 1
+    SQON_DBCONN_MYSQL = 1,
+    SQON_DBCONN_POSTGRES
   };
 
 /**
@@ -185,7 +186,7 @@ sqon_query (sqon_DatabaseServer *srv, const char *query, char **out,
 /**
  * @brief Gets the primary key of a table.
  * @param srv Initialized database connection object.
- * @param table Name of the database table.
+ * @param table Name of the database table, not escaped.
  * @param out Pointer to string which will be allocated and populated with the
  * table's primary key.
  * @return Negative if input or IO error; positive if error from server.
