@@ -65,16 +65,16 @@ __BEGIN_DECLS
  * @brief Error codes returned on failure.
  */
 enum sqon_error
-  {
-    SQON_MEMORYERROR = -12,
-    SQON_OVERFLOW    = -13,
-    SQON_UNSUPPORTED = -14,
+{
+  SQON_MEMORYERROR = -12,
+  SQON_OVERFLOW    = -13,
+  SQON_UNSUPPORTED = -14,
 
-    SQON_CONNECTERR  = -20,
-    SQON_NOCOLUMNS   = -21,
-    SQON_NOPK        = -23,
-    SQON_PKNOTUNIQUE = -24
-  };
+  SQON_CONNECTERR  = -20,
+  SQON_NOCOLUMNS   = -21,
+  SQON_NOPK        = -23,
+  SQON_PKNOTUNIQUE = -24
+};
 
 /**
  * @brief More secure implementation of stdlib's malloc().
@@ -125,10 +125,10 @@ typedef struct
  * @brief Constants for storing the type of a database connection.
  */
 enum sqon_database_type
-  {
-    SQON_DBCONN_MYSQL = 1,
-    SQON_DBCONN_POSTGRES
-  };
+{
+  SQON_DBCONN_MYSQL = 1,
+  SQON_DBCONN_POSTGRES
+};
 
 /**
  * @brief Constructs a database connection.
