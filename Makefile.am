@@ -1,5 +1,5 @@
 ACLOCAL_AMFLAGS = -I m4 --install
-dist_doc_DATA = README.md
+dist_doc_DATA = README
 pkgconfigdir = $(libdir)/pkgconfig
 dist_pkgconfig_DATA = sqon.pc
 
